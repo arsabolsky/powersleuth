@@ -12,6 +12,7 @@ struct OnboardingView: View {
                 howLongPage.tag(2)
                 howToUsePage.tag(3)
                 setupPage.tag(4)
+                aiSetupPage.tag(5)
             }
             .tabViewStyle(.automatic)
             .frame(width: 560, height: 420)
@@ -26,7 +27,7 @@ struct OnboardingView: View {
                 Spacer()
                 pageIndicator
                 Spacer()
-                if page < 4 {
+                if page < 5 {
                     Button("Next") { withAnimation { page += 1 } }
                         .buttonStyle(.borderedProminent)
                 } else {
@@ -136,9 +137,13 @@ struct OnboardingView: View {
         .padding(40)
     }
 
+    private var aiSetupPage: some View {
+        AISetupOnboardingPage()
+    }
+
     private var pageIndicator: some View {
         HStack(spacing: 6) {
-            ForEach(0..<5) { i in
+            ForEach(0..<6) { i in
                 Circle()
                     .fill(i == page ? Color.accentColor : Color.secondary.opacity(0.4))
                     .frame(width: 6, height: 6)
@@ -196,5 +201,84 @@ private struct CheckRow: View {
             Image(systemName: "checkmark").foregroundColor(.green).font(.caption)
             Text(text).font(.callout)
         }
+    }
+}
+
+// MARK: - AI Setup page (uses OllamaService singleton)
+
+private struct AISetupOnboardingPage: View {
+    @ObservedObject private var ollama    = OllamaService.shared
+    @ObservedObject private var narrative = NarrativeEngine.shared
+    @AppStorage("ai.ollamaModel")         private var ollamaModel = ""
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            HStack(spacing: 12) {
+                Image(systemName: "brain").font(.system(size: 36)).foregroundStyle(.purple.gradient)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("AI Analysis (Optional)")
+                        .font(.title2).bold()
+                    Text("Adds natural language summaries and deeper findings to the Analysis tab.")
+                        .font(.caption).foregroundColor(.secondary)
+                }
+            }
+
+            // Apple Intelligence status
+            HStack(spacing: 10) {
+                Image(systemName: narrative.appleIntelligenceAvailable ? "checkmark.circle.fill" : "circle.dashed")
+                    .foregroundColor(narrative.appleIntelligenceAvailable ? .green : .secondary)
+                    .font(.title3)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Apple Intelligence").font(.callout).fontWeight(.medium)
+                    Text(narrative.appleIntelligenceAvailable
+                         ? "Available — on-device, private, no setup needed."
+                         : "Not available on this Mac / macOS version.")
+                        .font(.caption).foregroundColor(.secondary)
+                }
+            }
+
+            Divider()
+
+            // Ollama section
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(spacing: 10) {
+                    Image(systemName: ollama.isDetected ? "checkmark.circle.fill" : "circle.dashed")
+                        .foregroundColor(ollama.isDetected ? .green : .secondary)
+                        .font(.title3)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Ollama (Local LLM)").font(.callout).fontWeight(.medium)
+                        Text("Best for AI Findings. Runs locally — private and free.")
+                            .font(.caption).foregroundColor(.secondary)
+                    }
+                    Spacer()
+                    if !ollama.isDetected {
+                        Link("Install →", destination: URL(string: "https://ollama.ai")!)
+                            .font(.caption).buttonStyle(.bordered)
+                    }
+                    Button(ollama.isChecking ? "Checking…" : "Detect") {
+                        Task { await ollama.check() }
+                    }
+                    .buttonStyle(.bordered).controlSize(.small).disabled(ollama.isChecking)
+                }
+
+                if ollama.isDetected, !ollama.models.isEmpty {
+                    Picker("Select model", selection: $ollamaModel) {
+                        Text("— select —").tag("")
+                        ForEach(ollama.models) { m in
+                            Text("\(m.name)  ·  \(m.sizeLabel)").tag(m.name)
+                        }
+                    }
+                    Text("Recommended: llama3.2:latest, qwen2.5:7b, or mistral:7b (7B+ for best reasoning)")
+                        .font(.caption2).foregroundColor(.secondary)
+                }
+            }
+
+            Spacer()
+
+            Text("You can change these anytime in Settings → AI Analysis.")
+                .font(.caption).foregroundColor(.secondary)
+        }
+        .padding(32)
+        .task { await ollama.check() }
     }
 }

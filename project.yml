@@ -32,6 +32,7 @@ targets:
         COMBINE_HIDPI_IMAGES: YES
         ENABLE_HARDENED_RUNTIME: NO
         OTHER_SWIFT_FLAGS: "-enable-upcoming-feature BareSlashRegexLiterals"
+        OTHER_LDFLAGS: "-weak_framework FoundationModels"
     entitlements:
       path: PowerSleuth/PowerSleuth.entitlements
       properties:

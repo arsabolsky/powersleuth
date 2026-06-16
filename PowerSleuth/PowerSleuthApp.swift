@@ -37,8 +37,12 @@ struct PowerSleuthApp: App {
                     .environmentObject(systemCollector)
             }
         }
-        .defaultSize(width: 900, height: 620)
+        .defaultSize(width: 920, height: 640)
         .windowResizability(.contentMinSize)
+
+        Settings {
+            SettingsView()
+        }
     }
 }
 

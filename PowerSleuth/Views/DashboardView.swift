@@ -36,6 +36,7 @@ struct DashboardView: View {
             Section("Tools") {
                 Label("Export",    systemImage: "square.and.arrow.up").tag(5)
                 Label("Help",      systemImage: "questionmark.circle").tag(6)
+                Label("Settings",  systemImage: "gear").tag(7)
             }
         }
         .listStyle(.sidebar)
@@ -54,6 +55,7 @@ struct DashboardView: View {
         case 4: HistoryChartView()
         case 5: ExportView()
         case 6: HelpView()
+        case 7: SettingsView()
         default: EmptyView()
         }
     }

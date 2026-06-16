@@ -10,6 +10,8 @@
 		16E339C48B9492B8F248CC73 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F273033AF337663473314BB9 /* OnboardingView.swift */; };
 		18EB1C01342349DF544258FC /* PowerSleuthApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9B7E33742CD2A81E0A9EB16 /* PowerSleuthApp.swift */; };
 		19135E583F37D7F7D08758A3 /* PowerAssertion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D1F39C82EB3055642815506 /* PowerAssertion.swift */; };
+		1C5AE9469C45A91FFC6DD037 /* NarrativeEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2567EDCD5A697972E57AC051 /* NarrativeEngine.swift */; };
+		20737B6854ED31A0033B7306 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 368790A43D2E683C58E90B25 /* SettingsView.swift */; };
 		208C0045EC4D8C848618343F /* ExportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 671930D781DDFEADAD18A9FF /* ExportView.swift */; };
 		2DB91ACC34CFCC8CE1C21D88 /* HelpView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C27B271EEB19C98DFAF637BF /* HelpView.swift */; };
 		36B27B59ED1C53DC01842AE4 /* ProcessSample.swift in Sources */ = {isa = PBXBuildFile; fileRef = 233099DE68ABFFFB517BDC7B /* ProcessSample.swift */; };
@@ -26,6 +28,7 @@
 		8905FA39F1E59524B7BB4833 /* DrainSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 681A8FC7696A0F691F05133A /* DrainSession.swift */; };
 		90918DEDA652BF36AA1BC9D7 /* SystemMetricsCollector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1B2EE35F7038589DA0C7BD /* SystemMetricsCollector.swift */; };
 		9A5F81FB725C4C69DBF07ADE /* GRDB in Frameworks */ = {isa = PBXBuildFile; productRef = FBD3C4D4E72CFE457A74FC03 /* GRDB */; };
+		9CCED204E60D57F022A13845 /* OllamaService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0FEF42081E76576AAC0EBFD /* OllamaService.swift */; };
 		B0C7AE128147A2B938849DCB /* SystemMetricsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21E347D0EEF172B452D155FD /* SystemMetricsView.swift */; };
 		B76DF8E77CC7C958F51F1A11 /* AnalysisEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = E97DC7A51CEC16DF8F6C0B84 /* AnalysisEngine.swift */; };
 		B927ABBF07B9517076EAFCA4 /* TopConsumersView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1F6676DE5D770A8E34E644E /* TopConsumersView.swift */; };
@@ -55,10 +58,12 @@
 		19277F05617B05E9637011DB /* DatabaseService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatabaseService.swift; sourceTree = "<group>"; };
 		21E347D0EEF172B452D155FD /* SystemMetricsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemMetricsView.swift; sourceTree = "<group>"; };
 		233099DE68ABFFFB517BDC7B /* ProcessSample.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessSample.swift; sourceTree = "<group>"; };
+		2567EDCD5A697972E57AC051 /* NarrativeEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NarrativeEngine.swift; sourceTree = "<group>"; };
 		2D1F39C82EB3055642815506 /* PowerAssertion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PowerAssertion.swift; sourceTree = "<group>"; };
 		300CD5D2A9A5BB13CE564150 /* BatteryMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BatteryMonitor.swift; sourceTree = "<group>"; };
 		30D1CF17850E7A2784C80C83 /* AnalysisView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalysisView.swift; sourceTree = "<group>"; };
 		32B19FF9B937654C9DC6B48D /* DrainDiagnosis.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrainDiagnosis.swift; sourceTree = "<group>"; };
+		368790A43D2E683C58E90B25 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		3E3506346C2341081552C23F /* PowerSleuth.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PowerSleuth.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		465088F6CC01DDBE5D14839C /* AssertionMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssertionMonitor.swift; sourceTree = "<group>"; };
 		48A746ED80028C5FD34CAA41 /* SessionTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionTracker.swift; sourceTree = "<group>"; };
@@ -77,6 +82,7 @@
 		A47B20231A5547E0222D5A23 /* HistoryChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryChartView.swift; sourceTree = "<group>"; };
 		A495E838B3A81F7A5282133A /* PowerSleuthTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PowerSleuthTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A9B7E33742CD2A81E0A9EB16 /* PowerSleuthApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PowerSleuthApp.swift; sourceTree = "<group>"; };
+		C0FEF42081E76576AAC0EBFD /* OllamaService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OllamaService.swift; sourceTree = "<group>"; };
 		C1F6676DE5D770A8E34E644E /* TopConsumersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TopConsumersView.swift; sourceTree = "<group>"; };
 		C27B271EEB19C98DFAF637BF /* HelpView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelpView.swift; sourceTree = "<group>"; };
 		D16DE60429C3EAA6ABEE9544 /* SharedComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedComponents.swift; sourceTree = "<group>"; };
@@ -128,7 +134,9 @@
 				465088F6CC01DDBE5D14839C /* AssertionMonitor.swift */,
 				300CD5D2A9A5BB13CE564150 /* BatteryMonitor.swift */,
 				19277F05617B05E9637011DB /* DatabaseService.swift */,
+				2567EDCD5A697972E57AC051 /* NarrativeEngine.swift */,
 				F692E2F5EC73DD73ABD53D77 /* NetworkSampler.swift */,
+				C0FEF42081E76576AAC0EBFD /* OllamaService.swift */,
 				8CA52562E9FE28FBAE73E56A /* ProcessSampler.swift */,
 				82567E4E11CCFAD996521D92 /* ReportExporter.swift */,
 				48A746ED80028C5FD34CAA41 /* SessionTracker.swift */,
@@ -171,6 +179,7 @@
 				A47B20231A5547E0222D5A23 /* HistoryChartView.swift */,
 				4F788079F05B67393E654647 /* MenuBarView.swift */,
 				F273033AF337663473314BB9 /* OnboardingView.swift */,
+				368790A43D2E683C58E90B25 /* SettingsView.swift */,
 				D16DE60429C3EAA6ABEE9544 /* SharedComponents.swift */,
 				0C88B5F53C38E44958B894A9 /* StatusLabel.swift */,
 				21E347D0EEF172B452D155FD /* SystemMetricsView.swift */,
@@ -283,8 +292,10 @@
 				2DB91ACC34CFCC8CE1C21D88 /* HelpView.swift in Sources */,
 				7E79BCB84FAE827C2E240A6E /* HistoryChartView.swift in Sources */,
 				F4AEA023E1A22063AA85A1A4 /* MenuBarView.swift in Sources */,
+				1C5AE9469C45A91FFC6DD037 /* NarrativeEngine.swift in Sources */,
 				CACDBA0E47E921E65FB12EB6 /* NetworkSample.swift in Sources */,
 				4C725AAF6692E4D46561B905 /* NetworkSampler.swift in Sources */,
+				9CCED204E60D57F022A13845 /* OllamaService.swift in Sources */,
 				16E339C48B9492B8F248CC73 /* OnboardingView.swift in Sources */,
 				19135E583F37D7F7D08758A3 /* PowerAssertion.swift in Sources */,
 				18EB1C01342349DF544258FC /* PowerSleuthApp.swift in Sources */,
@@ -292,6 +303,7 @@
 				CEE8759D367F3CB1F6999370 /* ProcessSampler.swift in Sources */,
 				F0B6C0D52F01A5B3693AB40D /* ReportExporter.swift in Sources */,
 				465C392E27BE9BCD3F5BEF47 /* SessionTracker.swift in Sources */,
+				20737B6854ED31A0033B7306 /* SettingsView.swift in Sources */,
 				3CA892ED5E705A2EB433327F /* SharedComponents.swift in Sources */,
 				43AF54B920E648A53BF4A656 /* StatusLabel.swift in Sources */,
 				FC36F364BCD5D82EC5BCCAD9 /* SystemMetrics.swift in Sources */,
@@ -335,6 +347,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				OTHER_LDFLAGS = "-weak_framework FoundationModels";
 				OTHER_SWIFT_FLAGS = "-enable-upcoming-feature BareSlashRegexLiterals";
 				PRODUCT_BUNDLE_IDENTIFIER = com.arsabolsky.powersleuth;
 				SDKROOT = macosx;
@@ -358,6 +371,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				OTHER_LDFLAGS = "-weak_framework FoundationModels";
 				OTHER_SWIFT_FLAGS = "-enable-upcoming-feature BareSlashRegexLiterals";
 				PRODUCT_BUNDLE_IDENTIFIER = com.arsabolsky.powersleuth;
 				SDKROOT = macosx;
