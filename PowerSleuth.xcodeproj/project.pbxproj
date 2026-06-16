@@ -13,7 +13,7 @@
 		1C5AE9469C45A91FFC6DD037 /* NarrativeEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2567EDCD5A697972E57AC051 /* NarrativeEngine.swift */; };
 		20737B6854ED31A0033B7306 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 368790A43D2E683C58E90B25 /* SettingsView.swift */; };
 		208C0045EC4D8C848618343F /* ExportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 671930D781DDFEADAD18A9FF /* ExportView.swift */; };
-		2ABAE67988448F3E727B64CC /* DeepPowerSampler.swift in Sources */ = {isa = PBXBuildFile; fileRef = D28E22931FFE9C29F0F3B274 /* DeepPowerSampler.swift */; };
+		21012ADF45F47ED349BAF427 /* IOReportPower.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8ED2BECC7F5A26953E9C4026 /* IOReportPower.swift */; };
 		2C089A9720A929DE23AA95E9 /* AppIcon.icns in Resources */ = {isa = PBXBuildFile; fileRef = AFF1DCF11CC3A747554BA0BA /* AppIcon.icns */; };
 		2DB91ACC34CFCC8CE1C21D88 /* HelpView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C27B271EEB19C98DFAF637BF /* HelpView.swift */; };
 		36B27B59ED1C53DC01842AE4 /* ProcessSample.swift in Sources */ = {isa = PBXBuildFile; fileRef = 233099DE68ABFFFB517BDC7B /* ProcessSample.swift */; };
@@ -31,7 +31,6 @@
 		90918DEDA652BF36AA1BC9D7 /* SystemMetricsCollector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1B2EE35F7038589DA0C7BD /* SystemMetricsCollector.swift */; };
 		94250AA4479B25BE336E5C4D /* AppServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E79139ADCFC2BFBDFD854F6 /* AppServices.swift */; };
 		9A5F81FB725C4C69DBF07ADE /* GRDB in Frameworks */ = {isa = PBXBuildFile; productRef = FBD3C4D4E72CFE457A74FC03 /* GRDB */; };
-		9B95612126979F7160D41C9A /* DeepPowerModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0892E99360BABCCC8848D46B /* DeepPowerModels.swift */; };
 		9CCED204E60D57F022A13845 /* OllamaService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0FEF42081E76576AAC0EBFD /* OllamaService.swift */; };
 		A774027E4D2CDEB30CFDFCB1 /* ProfileComparison.swift in Sources */ = {isa = PBXBuildFile; fileRef = B70D3E9EFD86C02469D0C4D3 /* ProfileComparison.swift */; };
 		B0C7AE128147A2B938849DCB /* SystemMetricsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21E347D0EEF172B452D155FD /* SystemMetricsView.swift */; };
@@ -62,7 +61,6 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		0892E99360BABCCC8848D46B /* DeepPowerModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeepPowerModels.swift; sourceTree = "<group>"; };
 		0C88B5F53C38E44958B894A9 /* StatusLabel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusLabel.swift; sourceTree = "<group>"; };
 		132039EE8FB3137FC6EF28CD /* CompareView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompareView.swift; sourceTree = "<group>"; };
 		19277F05617B05E9637011DB /* DatabaseService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatabaseService.swift; sourceTree = "<group>"; };
@@ -90,6 +88,7 @@
 		7E1B2EE35F7038589DA0C7BD /* SystemMetricsCollector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemMetricsCollector.swift; sourceTree = "<group>"; };
 		82567E4E11CCFAD996521D92 /* ReportExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportExporter.swift; sourceTree = "<group>"; };
 		8CA52562E9FE28FBAE73E56A /* ProcessSampler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessSampler.swift; sourceTree = "<group>"; };
+		8ED2BECC7F5A26953E9C4026 /* IOReportPower.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IOReportPower.swift; sourceTree = "<group>"; };
 		9063589DBAA6796F111D2D33 /* PowerSleuthTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PowerSleuthTests.swift; sourceTree = "<group>"; };
 		A47B20231A5547E0222D5A23 /* HistoryChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryChartView.swift; sourceTree = "<group>"; };
 		A495E838B3A81F7A5282133A /* PowerSleuthTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PowerSleuthTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -100,7 +99,6 @@
 		C1F6676DE5D770A8E34E644E /* TopConsumersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TopConsumersView.swift; sourceTree = "<group>"; };
 		C27B271EEB19C98DFAF637BF /* HelpView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelpView.swift; sourceTree = "<group>"; };
 		D16DE60429C3EAA6ABEE9544 /* SharedComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedComponents.swift; sourceTree = "<group>"; };
-		D28E22931FFE9C29F0F3B274 /* DeepPowerSampler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeepPowerSampler.swift; sourceTree = "<group>"; };
 		D3401274ACCDADF04A21A7B1 /* BatterySnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BatterySnapshot.swift; sourceTree = "<group>"; };
 		D5CBAE5F625B291A4119E225 /* ParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParserTests.swift; sourceTree = "<group>"; };
 		DDC3A305293650E9452465DA /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
@@ -152,7 +150,7 @@
 				465088F6CC01DDBE5D14839C /* AssertionMonitor.swift */,
 				300CD5D2A9A5BB13CE564150 /* BatteryMonitor.swift */,
 				19277F05617B05E9637011DB /* DatabaseService.swift */,
-				D28E22931FFE9C29F0F3B274 /* DeepPowerSampler.swift */,
+				8ED2BECC7F5A26953E9C4026 /* IOReportPower.swift */,
 				2567EDCD5A697972E57AC051 /* NarrativeEngine.swift */,
 				F692E2F5EC73DD73ABD53D77 /* NetworkSampler.swift */,
 				C0FEF42081E76576AAC0EBFD /* OllamaService.swift */,
@@ -177,7 +175,6 @@
 			isa = PBXGroup;
 			children = (
 				D3401274ACCDADF04A21A7B1 /* BatterySnapshot.swift */,
-				0892E99360BABCCC8848D46B /* DeepPowerModels.swift */,
 				4B32A235AAE8CC09A5E4F6B4 /* DeviceProfile.swift */,
 				32B19FF9B937654C9DC6B48D /* DrainDiagnosis.swift */,
 				681A8FC7696A0F691F05133A /* DrainSession.swift */,
@@ -331,14 +328,13 @@
 				D26AF487B7DA1DFD4C7B73FF /* CompareView.swift in Sources */,
 				DDABE8589B47B5BA19E302F8 /* DashboardView.swift in Sources */,
 				E01EC22A4AABB57B77B449CD /* DatabaseService.swift in Sources */,
-				9B95612126979F7160D41C9A /* DeepPowerModels.swift in Sources */,
-				2ABAE67988448F3E727B64CC /* DeepPowerSampler.swift in Sources */,
 				45028FF2C4C8BC3A4CD59A68 /* DeviceProfile.swift in Sources */,
 				EA26D9E4862797A6C26C439E /* DrainDiagnosis.swift in Sources */,
 				8905FA39F1E59524B7BB4833 /* DrainSession.swift in Sources */,
 				208C0045EC4D8C848618343F /* ExportView.swift in Sources */,
 				2DB91ACC34CFCC8CE1C21D88 /* HelpView.swift in Sources */,
 				7E79BCB84FAE827C2E240A6E /* HistoryChartView.swift in Sources */,
+				21012ADF45F47ED349BAF427 /* IOReportPower.swift in Sources */,
 				F4AEA023E1A22063AA85A1A4 /* MenuBarView.swift in Sources */,
 				1C5AE9469C45A91FFC6DD037 /* NarrativeEngine.swift in Sources */,
 				CACDBA0E47E921E65FB12EB6 /* NetworkSample.swift in Sources */,

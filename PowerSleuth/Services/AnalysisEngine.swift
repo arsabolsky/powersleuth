@@ -105,19 +105,16 @@ final class AnalysisEngine: Sendable {
             culprits.append(String(format: "High system CPU load: %.0f%% — active work is the drain source", cpuPct))
         }
 
-        // GPU drain. Deep Power Mode gives true *system* GPU watts (Apple Silicon doesn't
-        // expose per-process GPU, so we attribute to the top energy-impact apps by inference).
+        // GPU drain, from real measured GPU watts (IOReport, always on). Apple Silicon doesn't
+        // expose per-process GPU, so attribute to the top energy-impact app by inference.
         let measuredGpuW = (try? db.fetchAverageComponentPower(since: since))?.gpuW ?? 0
         let suspect = highImpactProcesses.first?.name ?? topProcess?.name
         if measuredGpuW > 1.0 {
             let who = suspect.map { " — likely \($0) (top energy consumer)" } ?? ""
             culprits.append(String(format: "GPU drawing %.1f W on average (measured)%@", measuredGpuW, who))
         } else if gpuPct > 40 {
-            if let s = suspect {
-                culprits.append(String(format: "GPU utilization %.0f%% — likely driven by %@ (enable Deep Power Mode for measured GPU watts)", gpuPct, s))
-            } else {
-                culprits.append(String(format: "Sustained GPU utilization %.0f%% — GPU-dense work is adding drain", gpuPct))
-            }
+            let who = suspect.map { " — likely \($0)" } ?? ""
+            culprits.append(String(format: "Sustained GPU utilization %.0f%%%@ — GPU-dense work is adding drain", gpuPct, who))
         }
 
         if ramPressure > 80 {

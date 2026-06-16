@@ -18,6 +18,9 @@ struct SystemMetrics: Codable, FetchableRecord, PersistableRecord, Identifiable,
     var loadAvg1m: Double
     var gpuUtilPct: Double = 0  // IOAccelerator "Device Utilization %"
     var vramInUseMb: Double = 0 // IOAccelerator "In use system memory"
+    var cpuWatts: Double = 0    // IOReport Energy Model (no admin)
+    var gpuWatts: Double = 0
+    var aneWatts: Double = 0
 
     static let databaseTableName = "system_metrics"
 

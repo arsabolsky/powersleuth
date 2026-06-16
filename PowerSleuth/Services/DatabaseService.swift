@@ -141,6 +141,18 @@ final class DatabaseService: Sendable {
             }
         }
 
+        // Deep Power Mode (admin powermetrics) was replaced by always-on IOReport: fold
+        // component watts into system_metrics and drop the Tier-2 tables.
+        migrator.registerMigration("v6") { db in
+            try db.alter(table: "system_metrics") { t in
+                t.add(column: "cpuWatts", .double).defaults(to: 0)
+                t.add(column: "gpuWatts", .double).defaults(to: 0)
+                t.add(column: "aneWatts", .double).defaults(to: 0)
+            }
+            try db.drop(table: "process_power_samples")
+            try db.drop(table: "component_power_samples")
+        }
+
         try migrator.migrate(dbQueue)
     }
 
@@ -198,65 +210,16 @@ final class DatabaseService: Sendable {
         }
     }
 
-    // MARK: - Deep Power (Tier 2) Writes/Reads
+    // MARK: - Component power (IOReport, always-on, no admin)
 
-    func saveComponentPower(_ sample: inout ComponentPowerSample) throws {
-        try dbQueue.write { db in try sample.insert(db) }
-    }
-
-    func saveProcessPower(_ samples: [ProcessPowerSample]) throws {
-        try dbQueue.write { db in
-            for s in samples { try s.insert(db) }
-        }
-    }
-
-    func fetchLatestComponentPower() throws -> ComponentPowerSample? {
-        try dbQueue.read { db in
-            try ComponentPowerSample.order(Column("timestamp").desc).fetchOne(db)
-        }
-    }
-
-    /// Average measured component watts over the window (Deep Power Mode). nil if no data.
+    /// Average measured CPU/GPU/ANE watts over the window. nil if no samples carry power.
     func fetchAverageComponentPower(since date: Date) throws -> (cpuW: Double, gpuW: Double, aneW: Double)? {
         try dbQueue.read { db in
             guard let row = try Row.fetchOne(db, sql: """
                 SELECT AVG(cpuWatts), AVG(gpuWatts), AVG(aneWatts), COUNT(*)
-                FROM component_power_samples WHERE timestamp >= ?
+                FROM system_metrics WHERE timestamp >= ? AND (cpuWatts > 0 OR gpuWatts > 0)
                 """, arguments: [date]), (row[3] ?? 0) > 0 else { return nil }
             return (row[0] ?? 0, row[1] ?? 0, row[2] ?? 0)
-        }
-    }
-
-    /// True when Deep Power Mode has recorded any data in the window.
-    func hasProcessPower(since date: Date) throws -> Bool {
-        try dbQueue.read { db in
-            try ProcessPowerSample.filter(Column("timestamp") >= date).fetchCount(db) > 0
-        }
-    }
-
-    func fetchProcessPowerAggregations(since date: Date, limit: Int = 20) throws -> [ProcessPowerAggregation] {
-        try dbQueue.read { db in
-            let rows = try Row.fetchAll(db, sql: """
-                SELECT name,
-                       AVG(cpuMsPerSec) as avgCpu,
-                       AVG(gpuMsPerSec) as avgGpu,
-                       AVG(energyImpact) as avgEnergy,
-                       COUNT(*) as cnt
-                FROM process_power_samples
-                WHERE timestamp >= ?
-                GROUP BY name
-                ORDER BY avgGpu DESC, avgEnergy DESC
-                LIMIT ?
-                """, arguments: [date, limit])
-            return rows.map { row in
-                ProcessPowerAggregation(
-                    name: row["name"] ?? "Unknown",
-                    avgCpuMsPerSec: row["avgCpu"] ?? 0,
-                    avgGpuMsPerSec: row["avgGpu"] ?? 0,
-                    avgEnergyImpact: row["avgEnergy"] ?? 0,
-                    sampleCount: row["cnt"] ?? 0
-                )
-            }
         }
     }
 
@@ -428,8 +391,7 @@ final class DatabaseService: Sendable {
         try dbQueue.write { db in
             // Most tables key off `timestamp`; drain_sessions keys off `startTimestamp`.
             for table in ["battery_snapshots", "power_assertions",
-                          "battery_health", "process_samples", "system_metrics", "network_samples",
-                          "component_power_samples", "process_power_samples"] {
+                          "battery_health", "process_samples", "system_metrics", "network_samples"] {
                 try db.execute(sql: "DELETE FROM \(table) WHERE timestamp < ?", arguments: [cutoff])
             }
             try db.execute(sql: "DELETE FROM drain_sessions WHERE startTimestamp < ?", arguments: [cutoff])

@@ -11,6 +11,7 @@ final class SystemMetricsCollector: ObservableObject {
     private var prevDiskWriteBytes: Int64 = 0
     private var prevSampleTime: Date = Date()
     private var hasDiskBaseline = false
+    private let ioReport = IOReportPower()   // nil if unavailable; no admin needed
 
     init() { start() }
 
@@ -29,6 +30,7 @@ final class SystemMetricsCollector: ObservableObject {
         let disk = readDiskDelta()
         let (systemWatts, adapterWatts) = Self.readSystemPower()
         let gpu = Self.readGPU()
+        let power = ioReport?.sample()   // (cpuW, gpuW, aneW), no admin
         let loadAvg = Self.readLoadAvg()
 
         var m = SystemMetrics(
@@ -47,7 +49,10 @@ final class SystemMetricsCollector: ObservableObject {
             adapterWatts: adapterWatts,
             loadAvg1m: loadAvg,
             gpuUtilPct: gpu.utilizationPct,
-            vramInUseMb: gpu.vramInUseMb
+            vramInUseMb: gpu.vramInUseMb,
+            cpuWatts: power?.cpuW ?? 0,
+            gpuWatts: power?.gpuW ?? 0,
+            aneWatts: power?.aneW ?? 0
         )
         current = m
         try? DatabaseService.shared.saveSystemMetrics(&m)

@@ -12,6 +12,7 @@ struct SystemMetricsView: View {
                 windowPicker
                 liveStatsGrid
                 powerChart
+                componentPowerChart
                 cpuChart
                 gpuChart
                 ramChart
@@ -85,6 +86,21 @@ struct SystemMetricsView: View {
             }
             .chartYScale(domain: 0...100)
             .chartForegroundStyleScale(["User": Color.blue, "System": Color.purple])
+            .chartXAxis { AxisMarks(values: .stride(by: axisStride)) { _ in AxisGridLine(); AxisValueLabel(format: axisFormat) } }
+        }
+    }
+
+    private var componentPowerChart: some View {
+        ChartCard(title: "Component Power — CPU / GPU / ANE (W)") {
+            Chart(metrics.filter { $0.cpuWatts > 0 || $0.gpuWatts > 0 }) { m in
+                LineMark(x: .value("t", m.timestamp), y: .value("CPU", m.cpuWatts), series: .value("c", "CPU"))
+                    .foregroundStyle(.blue).interpolationMethod(.catmullRom)
+                LineMark(x: .value("t", m.timestamp), y: .value("GPU", m.gpuWatts), series: .value("c", "GPU"))
+                    .foregroundStyle(.teal).interpolationMethod(.catmullRom)
+                LineMark(x: .value("t", m.timestamp), y: .value("ANE", m.aneWatts), series: .value("c", "ANE"))
+                    .foregroundStyle(.pink).interpolationMethod(.catmullRom)
+            }
+            .chartForegroundStyleScale(["CPU": Color.blue, "GPU": Color.teal, "ANE": Color.pink])
             .chartXAxis { AxisMarks(values: .stride(by: axisStride)) { _ in AxisGridLine(); AxisValueLabel(format: axisFormat) } }
         }
     }

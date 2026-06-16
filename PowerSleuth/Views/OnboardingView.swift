@@ -181,11 +181,9 @@ private struct CheckRow: View {
     }
 }
 
-// MARK: - Setup page (Launch at Login + optional Deep Power Mode)
+// MARK: - Setup page (Launch at Login)
 
 private struct SetupOnboardingPage: View {
-    @ObservedObject private var deep = DeepPowerSampler.shared
-    @AppStorage("deepPower.enabled") private var deepEnabled = false
     @State private var launchAtLogin = LoginItem.isEnabled
 
     var body: some View {
@@ -194,7 +192,7 @@ private struct SetupOnboardingPage: View {
                 Image(systemName: "checkmark.circle.fill").font(.system(size: 36)).foregroundColor(.green)
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Set Up Monitoring").font(.title2).bold()
-                    Text("Core monitoring needs no permissions. Two optional steps:")
+                    Text("No permissions needed — everything works out of the box.")
                         .font(.caption).foregroundColor(.secondary)
                 }
             }
@@ -212,27 +210,11 @@ private struct SetupOnboardingPage: View {
 
             Divider()
 
-            Toggle(isOn: $deepEnabled) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Deep Power Mode — true per-app GPU/CPU watts").font(.callout).fontWeight(.medium)
-                    Text("Optional. Installs a background helper (one admin prompt) running Apple's powermetrics to measure true CPU/GPU/ANE watts plus per-process CPU/energy. You can also enable this later in Settings.")
-                        .font(.caption).foregroundColor(.secondary)
-                }
-            }
-            .disabled(!deep.available)
-            .onChange(of: deepEnabled) { _, on in
-                if on { Task { let ok = await deep.start(); if !ok { deepEnabled = false } } }
-                else { deep.stop() }
-            }
-            if deep.isRunning {
-                Label("Deep Power Mode active", systemImage: "bolt.fill").font(.caption).foregroundColor(.green)
-            }
-
-            Divider()
-
             VStack(alignment: .leading, spacing: 8) {
+                CheckRow(text: "No admin, no permissions, no system extensions")
+                CheckRow(text: "True CPU/GPU/ANE power measured via IOReport — no sudo")
                 CheckRow(text: "Data stays on your Mac — no cloud sync")
-                CheckRow(text: "Core monitoring is lightweight (~30 MB, samples every 30–60s)")
+                CheckRow(text: "Lightweight: ~30 MB, samples every 30–60s")
             }
         }
         .padding(32)
