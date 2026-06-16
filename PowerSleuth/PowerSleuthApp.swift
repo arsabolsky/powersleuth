@@ -50,7 +50,8 @@ struct PowerSleuthApp: App {
 
 @MainActor
 final class AppCoordinator {
-    private var healthTimer: Timer?
+    private var dailyTimer: Timer?
+    private var alertTimer: Timer?
 
     init() {
         // Register default values so @AppStorage (SettingsView) and raw UserDefaults
@@ -65,13 +66,28 @@ final class AppCoordinator {
             "monitoring.retentionDays": 30
         ])
 
-        let retentionDays = UserDefaults.standard.integer(forKey: "monitoring.retentionDays")
-        try? DatabaseService.shared.pruneOldData(retentionDays: retentionDays > 0 ? retentionDays : 30)
+        pruneNow()
         sampleHealthIfNeeded()
-        healthTimer = Timer.scheduledTimer(withTimeInterval: 86400, repeats: true) { [weak self] _ in
-            Task { @MainActor in self?.sampleHealthIfNeeded() }
+        DrainNotifier.requestAuthorizationIfEnabled()
+
+        // Health sampling + pruning run daily (not just at launch — important for an
+        // always-on app, otherwise the DB grows unbounded between launches).
+        dailyTimer = Timer.scheduledTimer(withTimeInterval: 86400, repeats: true) { [weak self] _ in
+            Task { @MainActor in
+                self?.sampleHealthIfNeeded()
+                self?.pruneNow()
+            }
+        }
+        // High-drain check every 2 minutes (no-op unless the alert is enabled).
+        alertTimer = Timer.scheduledTimer(withTimeInterval: 120, repeats: true) { _ in
+            Task { @MainActor in DrainNotifier.checkAndNotify() }
         }
         _ = SessionTracker.shared
+    }
+
+    private func pruneNow() {
+        let days = UserDefaults.standard.integer(forKey: "monitoring.retentionDays")
+        try? DatabaseService.shared.pruneOldData(retentionDays: days > 0 ? days : 30)
     }
 
     private func sampleHealthIfNeeded() {

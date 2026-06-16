@@ -130,6 +130,8 @@ private struct MonitoringSettingsPane: View {
     @AppStorage("monitoring.highDrainAlertEnabled")  private var alertEnabled = false
     @AppStorage("monitoring.highDrainAlertWatts")    private var alertWatts = 20.0
 
+    @State private var launchAtLogin = LoginItem.isEnabled
+
     var body: some View {
         Form {
             Section("Data Collection") {
@@ -144,12 +146,15 @@ private struct MonitoringSettingsPane: View {
                     Text("30 days").tag(30)
                     Text("90 days").tag(90)
                 }
-                Text("Longer retention improves trend analysis; each day uses ~2–5 MB.")
+                Text("Battery/system sampling interval applies after the next launch. Longer retention improves trend analysis; each day uses ~2–5 MB.")
                     .font(.caption).foregroundColor(.secondary)
             }
 
             Section("Alerts") {
                 Toggle("High drain alert", isOn: $alertEnabled)
+                    .onChange(of: alertEnabled) { _, on in
+                        if on { DrainNotifier.requestAuthorization() }
+                    }
                 if alertEnabled {
                     HStack {
                         Text("Threshold")
@@ -162,23 +167,16 @@ private struct MonitoringSettingsPane: View {
             }
 
             Section("Startup") {
-                HStack {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Launch at Login")
-                        Text("Enables continuous monitoring across reboots")
-                            .font(.caption).foregroundColor(.secondary)
+                Toggle("Launch at Login", isOn: $launchAtLogin)
+                    .onChange(of: launchAtLogin) { _, on in
+                        if !LoginItem.setEnabled(on) { launchAtLogin = LoginItem.isEnabled }
                     }
-                    Spacer()
-                    Button("Open Login Items") {
-                        NSWorkspace.shared.open(
-                            URL(string: "x-apple.systempreferences:com.apple.LoginItems-Settings.extension")!
-                        )
-                    }
-                    .buttonStyle(.bordered).controlSize(.small)
-                }
+                Text("Registers PowerSleuth to start at login so monitoring runs continuously across reboots.")
+                    .font(.caption).foregroundColor(.secondary)
             }
         }
         .formStyle(.grouped)
         .padding()
+        .onAppear { launchAtLogin = LoginItem.isEnabled }
     }
 }

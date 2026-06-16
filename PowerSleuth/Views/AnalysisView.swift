@@ -152,7 +152,7 @@ struct AnalysisView: View {
     // MARK: - Actions
 
     private func triggerAI() {
-        guard narrative.anyAIAvailable, let d = diagnosis else { return }
+        guard narrative.anyAIAvailable, diagnosis != nil else { return }
         if narrative.summary == nil  { triggerSummary() }
         if narrative.findings == nil { triggerFindings() }
     }

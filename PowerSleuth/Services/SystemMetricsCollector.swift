@@ -15,7 +15,9 @@ final class SystemMetricsCollector: ObservableObject {
     init() { start() }
 
     private func start() {
-        timer = Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { [weak self] _ in
+        let configured = UserDefaults.standard.integer(forKey: "monitoring.sampleInterval")
+        let interval = configured > 0 ? Double(configured) : 30
+        timer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
             Task { @MainActor in self?.sample() }
         }
         sample()

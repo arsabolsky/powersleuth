@@ -135,11 +135,21 @@ final class ReportExporter: Sendable {
         return url
     }
 
+    /// Exports go to ~/Library/Application Support/PowerSleuth/Exports — unlike the
+    /// Desktop, this needs no TCC permission for a non-sandboxed app, so writes never
+    /// silently fail. ExportView's "Reveal in Finder" surfaces the file for the user.
+    static var exportsDirectory: URL {
+        let dir = FileManager.default
+            .urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+            .appendingPathComponent("PowerSleuth/Exports", isDirectory: true)
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir
+    }
+
     private func exportURL(ext: String) -> URL {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd_HH-mm"
         let name = "powersleuth-\(formatter.string(from: Date())).\(ext)"
-        return FileManager.default.urls(for: .desktopDirectory, in: .userDomainMask).first!
-            .appendingPathComponent(name)
+        return Self.exportsDirectory.appendingPathComponent(name)
     }
 }
