@@ -27,7 +27,7 @@ struct PowerSleuthApp: App {
 
         Window("PowerSleuth", id: "dashboard") {
             if showOnboarding {
-                OnboardingView(hasSeenOnboarding: $showOnboarding)
+                OnboardingView(showOnboarding: $showOnboarding)
             } else {
                 DashboardView()
                     .environmentObject(batteryMonitor)

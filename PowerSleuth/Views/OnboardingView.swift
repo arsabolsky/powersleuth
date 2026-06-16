@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct OnboardingView: View {
-    @Binding var hasSeenOnboarding: Bool
+    @Binding var showOnboarding: Bool
     @State private var page = 0
 
     var body: some View {
@@ -32,8 +32,8 @@ struct OnboardingView: View {
                         .buttonStyle(.borderedProminent)
                 } else {
                     Button("Start Monitoring") {
-                        hasSeenOnboarding = true
                         UserDefaults.standard.set(true, forKey: "hasSeenOnboarding")
+                        showOnboarding = false
                     }
                     .buttonStyle(.borderedProminent)
                 }
