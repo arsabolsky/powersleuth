@@ -16,6 +16,11 @@ final class AnalysisEngine: Sendable {
         let processAggs         = (try? db.fetchProcessAggregations(since: since, limit: 10)) ?? []
         let latestMetrics       = try? db.fetchLatestSystemMetrics()
 
+        // Data-sufficiency: battery life is diagnosed from ON-BATTERY + SLEEP data.
+        let daySnaps = (try? db.fetchSnapshots(since: Date().addingTimeInterval(-86400))) ?? []
+        let chargingFraction = daySnaps.isEmpty ? 1.0 : Double(daySnaps.filter { $0.isCharging }.count) / Double(daySnaps.count)
+        let hasSleepData = lastSleepSession != nil
+
         // 1. Current watts — prefer measured SystemPower over estimate
         let dischargingSnaps = recentSnapshots.filter { !$0.isCharging }
         let currentWatts: Double = {
@@ -72,6 +77,14 @@ final class AnalysisEngine: Sendable {
 
         // 8. Build culprit list (priority order)
         var culprits: [String] = []
+
+        // Guidance first when there isn't enough battery/sleep data to draw conclusions.
+        if daySnaps.count < 20 || chargingFraction > 0.9 {
+            culprits.append("Mostly on AC power — unplug and use on battery so real drain can be measured.")
+        }
+        if !hasSleepData {
+            culprits.append("No sleep data yet — let your Mac sleep (lid closed) overnight while PowerSleuth runs; overnight drain is the most common cause of poor battery life.")
+        }
 
         if let h = health, h.retentionPct < 80 {
             culprits.append(String(format: "Battery health at %.0f%% — reduced capacity is shrinking your range", h.retentionPct))
