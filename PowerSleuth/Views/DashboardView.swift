@@ -3,76 +3,170 @@ import SwiftUI
 struct DashboardView: View {
     @EnvironmentObject var batteryMonitor: BatteryMonitor
     @EnvironmentObject var assertionMonitor: AssertionMonitor
-    @State private var selectedTab: Int = 0
+    @EnvironmentObject var processSampler: ProcessSampler
+    @EnvironmentObject var networkSampler: NetworkSampler
+    @EnvironmentObject var systemCollector: SystemMetricsCollector
+
+    @State private var selectedTab = 0
     @State private var diagnosis: DrainDiagnosis?
     @State private var health: (cycleCount: Int, designMah: Int, maxMah: Int, retentionPct: Double)?
 
     var body: some View {
-        TabView(selection: $selectedTab) {
-            nowTab.tabItem { Label("Now", systemImage: "bolt.fill") }.tag(0)
-            HistoryChartView().tabItem { Label("History", systemImage: "chart.line.uptrend.xyaxis") }.tag(1)
-            analysisTab.tabItem { Label("Analysis", systemImage: "magnifyingglass") }.tag(2)
+        NavigationView {
+            sidebar
+            detailArea
         }
-        .frame(minWidth: 520, minHeight: 420)
+        .frame(minWidth: 700, minHeight: 500)
         .onAppear { refresh() }
+    }
+
+    // MARK: - Sidebar
+
+    private var sidebar: some View {
+        List(selection: $selectedTab) {
+            Section("Overview") {
+                Label("Now",      systemImage: "bolt.fill").tag(0)
+                Label("Analysis", systemImage: "lightbulb.fill").tag(1)
+            }
+            Section("Monitoring") {
+                Label("Consumers", systemImage: "chart.bar.fill").tag(2)
+                Label("System",    systemImage: "cpu").tag(3)
+                Label("History",   systemImage: "chart.line.uptrend.xyaxis").tag(4)
+            }
+            Section("Tools") {
+                Label("Export",    systemImage: "square.and.arrow.up").tag(5)
+                Label("Help",      systemImage: "questionmark.circle").tag(6)
+            }
+        }
+        .listStyle(.sidebar)
+        .frame(width: 180)
+    }
+
+    // MARK: - Detail
+
+    @ViewBuilder
+    private var detailArea: some View {
+        switch selectedTab {
+        case 0: nowTab
+        case 1: AnalysisView(diagnosis: diagnosis, cycleCount: health?.cycleCount, retentionPct: health?.retentionPct)
+        case 2: TopConsumersView().environmentObject(processSampler).environmentObject(networkSampler)
+        case 3: SystemMetricsView()
+        case 4: HistoryChartView()
+        case 5: ExportView()
+        case 6: HelpView()
+        default: EmptyView()
+        }
     }
 
     // MARK: - Now Tab
 
     private var nowTab: some View {
         ScrollView {
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                if let s = batteryMonitor.currentSnapshot {
-                    StatCard(label: "Battery",    value: "\(s.percentage)%",           icon: "battery.75",          color: .green)
-                    StatCard(label: "Power Draw", value: s.isCharging ? "Charging" : String(format: "%.1f W", s.watts),
-                             icon: "bolt.fill", color: s.isCharging ? .green : drainColor(s.watts))
-                    StatCard(label: "Temperature", value: s.temperatureC > 0 ? String(format: "%.1f °C", s.temperatureC) : "—",
-                             icon: "thermometer.medium", color: .orange)
-                    StatCard(label: "Source", value: s.powerSource.replacingOccurrences(of: " Power", with: ""),
-                             icon: s.isCharging ? "cable.connector" : "battery.100", color: .blue)
-                    StatCard(label: "Thermal State", value: thermalLabel(s.thermalState),
-                             icon: "flame.fill", color: thermalColor(s.thermalState))
-                    StatCard(label: "Low Power", value: s.lowPowerMode ? "On" : "Off",
-                             icon: "leaf.fill", color: s.lowPowerMode ? .green : .secondary)
-                } else {
-                    ProgressView()
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .gridCellColumns(2)
-                }
+            VStack(spacing: 16) {
+                powerGauge
+                metricsGrid
+                assertionsCard
             }
             .padding()
+        }
+    }
 
-            if !assertionMonitor.activeAssertions.isEmpty {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Active Power Assertions")
-                        .font(.headline)
-                        .padding(.horizontal)
-                    ForEach(assertionMonitor.activeAssertions) { a in
-                        HStack {
-                            Image(systemName: "moon.zzz.fill").foregroundColor(.orange)
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(a.processName).font(.callout).fontWeight(.medium)
-                                Text(a.assertionType).font(.caption).foregroundColor(.secondary)
-                            }
-                            Spacer()
-                            Text(a.reasonText).font(.caption2).foregroundColor(.secondary).lineLimit(1)
-                        }
-                        .padding(.horizontal)
-                    }
+    private var powerGauge: some View {
+        HStack(spacing: 24) {
+            // Big watts number
+            VStack(spacing: 4) {
+                if let s = batteryMonitor.currentSnapshot {
+                    Text(s.isCharging ? "Charging" : String(format: "%.1f W", s.watts))
+                        .font(.system(size: 48, weight: .bold, design: .rounded))
+                        .foregroundStyle(drainColor(s.watts))
+                    if !s.isCharging { DrainLevelBadge(level: DrainLevel.from(watts: s.watts)) }
                 }
-                .padding(.bottom)
+            }
+
+            Divider().frame(height: 60)
+
+            // System watts from BatteryData
+            if let m = systemCollector.current, m.systemWatts > 0 {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("System Power").font(.caption).foregroundColor(.secondary)
+                    Text(String(format: "%.1f W", m.systemWatts)).font(.title2).fontWeight(.semibold)
+                    Text("measured from battery controller").font(.caption2).foregroundColor(.secondary)
+                }
+            }
+
+            Spacer()
+
+            // Battery % ring
+            if let s = batteryMonitor.currentSnapshot {
+                ZStack {
+                    Circle().stroke(Color.gray.opacity(0.2), lineWidth: 8)
+                    Circle()
+                        .trim(from: 0, to: Double(s.percentage) / 100.0)
+                        .stroke(batteryRingColor(s.percentage), style: StrokeStyle(lineWidth: 8, lineCap: .round))
+                        .rotationEffect(.degrees(-90))
+                    Text("\(s.percentage)%").font(.title3).fontWeight(.bold)
+                }
+                .frame(width: 72, height: 72)
+            }
+        }
+        .padding()
+        .background(Color(.controlBackgroundColor))
+        .cornerRadius(12)
+    }
+
+    private var metricsGrid: some View {
+        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()),
+                            GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+            if let s = batteryMonitor.currentSnapshot {
+                StatCard(label: "Temperature",  value: s.temperatureC > 0 ? String(format: "%.1f°C", s.temperatureC) : "—",
+                         icon: "thermometer.medium", color: s.temperatureC > 45 ? .red : .orange)
+                StatCard(label: "Thermal State", value: thermalLabel(s.thermalState),
+                         icon: "flame.fill", color: thermalColor(s.thermalState))
+                StatCard(label: "Low Power",     value: s.lowPowerMode ? "On ✓" : "Off",
+                         icon: "leaf.fill", color: s.lowPowerMode ? .green : .secondary)
+                StatCard(label: "Power Source",  value: s.powerSource.replacingOccurrences(of: " Power", with: ""),
+                         icon: "cable.connector", color: .blue)
+            }
+            if let m = systemCollector.current {
+                StatCard(label: "CPU Load",   value: String(format: "%.0f%%", m.cpuUsedPct),
+                         icon: "cpu.fill", color: m.cpuUsedPct > 70 ? .red : .blue)
+                StatCard(label: "RAM Used",   value: "\(m.ramUsedMb / 1024) GB",
+                         icon: "memorychip.fill", color: .purple)
+                StatCard(label: "Load Avg",   value: String(format: "%.2f", m.loadAvg1m),
+                         icon: "gauge.medium", color: .secondary)
+                StatCard(label: "Disk Read",  value: String(format: "%.1f MB/s", m.diskReadMbS),
+                         icon: "internaldrive.fill", color: .green)
+            }
+            if let h = health {
+                StatCard(label: "Battery Health",  value: String(format: "%.0f%%", h.retentionPct),
+                         icon: "heart.fill", color: h.retentionPct >= 80 ? .green : .orange)
+                StatCard(label: "Cycle Count", value: "\(h.cycleCount)",
+                         icon: "arrow.clockwise", color: h.cycleCount < 500 ? .green : .orange)
             }
         }
     }
 
-    // MARK: - Analysis Tab
-
-    private var analysisTab: some View {
-        AnalysisView(
-            diagnosis: diagnosis,
-            cycleCount: health?.cycleCount,
-            retentionPct: health?.retentionPct
-        )
+    private var assertionsCard: some View {
+        Group {
+            if !assertionMonitor.activeAssertions.isEmpty {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Active Sleep Prevention").font(.headline)
+                    ForEach(assertionMonitor.activeAssertions) { a in
+                        HStack(spacing: 8) {
+                            Image(systemName: "moon.zzz.fill").foregroundColor(.orange)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(a.processName).font(.callout).fontWeight(.medium)
+                                Text("\(a.assertionType) — \(a.reasonText)")
+                                    .font(.caption).foregroundColor(.secondary).lineLimit(1)
+                            }
+                        }
+                    }
+                }
+                .padding()
+                .background(Color(.controlBackgroundColor))
+                .cornerRadius(12)
+            }
+        }
     }
 
     // MARK: - Helpers
@@ -81,20 +175,21 @@ struct DashboardView: View {
         DispatchQueue.global(qos: .utility).async {
             let d = AnalysisEngine.shared.analyze()
             let h = try? DatabaseService.shared.fetchLatestHealth()
-            DispatchQueue.main.async {
-                self.diagnosis = d
-                self.health = h
-            }
+            DispatchQueue.main.async { self.diagnosis = d; self.health = h }
         }
     }
 
     private func drainColor(_ watts: Double) -> Color {
         switch DrainLevel.from(watts: watts) {
         case .efficient: return .green
-        case .moderate:  return .blue
+        case .moderate:  return .primary
         case .elevated:  return .orange
         case .heavy:     return .red
         }
+    }
+
+    private func batteryRingColor(_ pct: Int) -> Color {
+        pct > 50 ? .green : pct > 20 ? .yellow : .red
     }
 
     private func thermalLabel(_ state: Int) -> String {
@@ -106,35 +201,4 @@ struct DashboardView: View {
     }
 }
 
-// MARK: - StatCard
-
-struct StatCard: View {
-    let label: String
-    let value: String
-    let icon: String
-    let color: Color
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Image(systemName: icon).foregroundColor(color)
-                Text(label).font(.caption).foregroundColor(.secondary)
-            }
-            Text(value)
-                .font(.title3)
-                .fontWeight(.semibold)
-        }
-        .padding()
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(.controlBackgroundColor))
-        .cornerRadius(10)
-    }
-}
-
-// MARK: - Safe subscript
-
-private extension Array {
-    subscript(safe index: Int) -> Element? {
-        indices.contains(index) ? self[index] : nil
-    }
-}
+// StatCard, DrainLevelBadge, safe subscript → SharedComponents.swift

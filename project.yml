@@ -2,8 +2,8 @@ name: PowerSleuth
 options:
   bundleIdPrefix: com.arsabolsky
   deploymentTarget:
-    macOS: "13.0"
-  xcodeVersion: "15.0"
+    macOS: "15.0"
+  xcodeVersion: "16.0"
   createIntermediateGroups: true
 
 packages:
@@ -15,7 +15,7 @@ targets:
   PowerSleuth:
     type: application
     platform: macOS
-    deploymentTarget: "13.0"
+    deploymentTarget: "15.0"
     sources:
       - PowerSleuth
     dependencies:
@@ -23,13 +23,15 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.arsabolsky.powersleuth
-        SWIFT_VERSION: "5.9"
-        MACOSX_DEPLOYMENT_TARGET: "13.0"
+        SWIFT_VERSION: "6.0"
+        SWIFT_STRICT_CONCURRENCY: complete
+        MACOSX_DEPLOYMENT_TARGET: "15.0"
         CODE_SIGN_STYLE: Automatic
         INFOPLIST_FILE: PowerSleuth/Info.plist
         CODE_SIGN_IDENTITY: "-"
         COMBINE_HIDPI_IMAGES: YES
         ENABLE_HARDENED_RUNTIME: NO
+        OTHER_SWIFT_FLAGS: "-enable-upcoming-feature BareSlashRegexLiterals"
     entitlements:
       path: PowerSleuth/PowerSleuth.entitlements
       properties:
@@ -38,7 +40,7 @@ targets:
   PowerSleuthTests:
     type: bundle.unit-test
     platform: macOS
-    deploymentTarget: "13.0"
+    deploymentTarget: "15.0"
     sources:
       - PowerSleuthTests
     dependencies:
@@ -46,7 +48,7 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.arsabolsky.powersleuthTests
-        SWIFT_VERSION: "5.9"
+        SWIFT_VERSION: "6.0"
 
 schemes:
   PowerSleuth:

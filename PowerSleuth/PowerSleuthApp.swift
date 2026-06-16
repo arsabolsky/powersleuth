@@ -2,24 +2,48 @@ import SwiftUI
 
 @main
 struct PowerSleuthApp: App {
-    @StateObject private var batteryMonitor = BatteryMonitor()
-    @StateObject private var assertionMonitor = AssertionMonitor()
+    @StateObject private var batteryMonitor     = BatteryMonitor()
+    @StateObject private var assertionMonitor   = AssertionMonitor()
+    @StateObject private var processSampler     = ProcessSampler()
+    @StateObject private var networkSampler     = NetworkSampler()
+    @StateObject private var systemCollector    = SystemMetricsCollector()
+
+    @State private var showOnboarding = !UserDefaults.standard.bool(forKey: "hasSeenOnboarding")
+    @State private var showDashboard  = false
 
     private let coordinator = AppCoordinator()
 
     var body: some Scene {
         MenuBarExtra {
-            MenuBarView()
+            MenuBarView(onOpenDashboard: { showDashboard = true })
                 .environmentObject(batteryMonitor)
                 .environmentObject(assertionMonitor)
+                .environmentObject(processSampler)
+                .environmentObject(systemCollector)
         } label: {
             StatusLabel(snapshot: batteryMonitor.currentSnapshot)
         }
         .menuBarExtraStyle(.window)
+
+        Window("PowerSleuth", id: "dashboard") {
+            if showOnboarding {
+                OnboardingView(hasSeenOnboarding: $showOnboarding)
+            } else {
+                DashboardView()
+                    .environmentObject(batteryMonitor)
+                    .environmentObject(assertionMonitor)
+                    .environmentObject(processSampler)
+                    .environmentObject(networkSampler)
+                    .environmentObject(systemCollector)
+            }
+        }
+        .defaultSize(width: 900, height: 620)
+        .windowResizability(.contentMinSize)
     }
 }
 
-/// Holds long-lived timers and one-time startup tasks outside the SwiftUI lifecycle.
+// MARK: - AppCoordinator
+
 final class AppCoordinator {
     private var healthTimer: Timer?
 
@@ -29,7 +53,6 @@ final class AppCoordinator {
         healthTimer = Timer.scheduledTimer(withTimeInterval: 86400, repeats: true) { [weak self] _ in
             self?.sampleHealthIfNeeded()
         }
-        // Kick off session tracker
         _ = SessionTracker.shared
     }
 

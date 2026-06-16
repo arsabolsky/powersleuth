@@ -80,6 +80,7 @@ final class BatteryMonitor: ObservableObject {
 
         let thermalState = ProcessInfo.processInfo.thermalState.rawValue
         let lowPowerMode = ProcessInfo.processInfo.isLowPowerModeEnabled
+        let systemWatts  = (reg["BatteryData"] as? NSDictionary)?["SystemPower"] as? Double ?? 0
 
         return BatterySnapshot(
             id: nil,
@@ -91,7 +92,8 @@ final class BatteryMonitor: ObservableObject {
             isCharging: isCharging,
             powerSource: powerSource,
             thermalState: thermalState,
-            lowPowerMode: lowPowerMode
+            lowPowerMode: lowPowerMode,
+            systemWatts: systemWatts
         )
     }
 

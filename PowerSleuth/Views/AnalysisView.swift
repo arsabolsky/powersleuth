@@ -113,39 +113,4 @@ struct AnalysisView: View {
     }
 }
 
-// MARK: - Reusable components
-
-struct CardView<Content: View>: View {
-    let title: String
-    @ViewBuilder let content: () -> Content
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(title)
-                .font(.headline)
-            content()
-        }
-        .padding()
-        .background(Color(.windowBackgroundColor).opacity(0.6))
-        .cornerRadius(12)
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.gray.opacity(0.2)))
-    }
-}
-
-struct MetricCell: View {
-    let label: String
-    let value: String
-    let color: Color
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(label)
-                .font(.caption)
-                .foregroundColor(.secondary)
-            Text(value)
-                .font(.title2)
-                .fontWeight(.bold)
-                .foregroundColor(color)
-        }
-    }
-}
+// CardView, MetricCell, StatCard, StatRow, DrainLevelBadge → SharedComponents.swift
