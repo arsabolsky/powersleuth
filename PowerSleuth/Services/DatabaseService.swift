@@ -124,7 +124,7 @@ final class DatabaseService: Sendable {
 
     func saveAssertions(_ assertions: [PowerAssertion]) throws {
         try dbQueue.write { db in
-            for var a in assertions { try a.insert(db) }
+            for a in assertions { try a.insert(db) }
         }
     }
 
@@ -156,7 +156,7 @@ final class DatabaseService: Sendable {
 
     func saveProcessSamples(_ samples: [ProcessSample]) throws {
         try dbQueue.write { db in
-            for var s in samples { try s.insert(db) }
+            for s in samples { try s.insert(db) }
         }
     }
 
@@ -166,7 +166,7 @@ final class DatabaseService: Sendable {
 
     func saveNetworkSamples(_ samples: [NetworkSample]) throws {
         try dbQueue.write { db in
-            for var s in samples { try s.insert(db) }
+            for s in samples { try s.insert(db) }
         }
     }
 
@@ -327,20 +327,21 @@ final class DatabaseService: Sendable {
 
     func fetchDataAge() throws -> Date? {
         try dbQueue.read { db in
-            let row = try Row.fetchOne(db, sql: "SELECT MIN(timestamp) FROM system_metrics")
-            return row?[0] as? Date
+            try Date.fetchOne(db, sql: "SELECT MIN(timestamp) FROM system_metrics")
         }
     }
 
     // MARK: - Maintenance
 
-    func pruneOldData() throws {
-        let cutoff = Date().addingTimeInterval(-30 * 86400)
+    func pruneOldData(retentionDays: Int = 30) throws {
+        let cutoff = Date().addingTimeInterval(-Double(retentionDays) * 86400)
         try dbQueue.write { db in
-            for table in ["battery_snapshots", "power_assertions", "drain_sessions",
+            // Most tables key off `timestamp`; drain_sessions keys off `startTimestamp`.
+            for table in ["battery_snapshots", "power_assertions",
                           "battery_health", "process_samples", "system_metrics", "network_samples"] {
                 try db.execute(sql: "DELETE FROM \(table) WHERE timestamp < ?", arguments: [cutoff])
             }
+            try db.execute(sql: "DELETE FROM drain_sessions WHERE startTimestamp < ?", arguments: [cutoff])
         }
     }
 }

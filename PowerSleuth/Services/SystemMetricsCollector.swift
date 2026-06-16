@@ -7,10 +7,10 @@ final class SystemMetricsCollector: ObservableObject {
     @Published var current: SystemMetrics?
 
     private var timer: Timer?
-    private var prevCPUInfo: [Int32] = []
-    private var prevDiskRead: Double = 0
-    private var prevDiskWrite: Double = 0
+    private var prevDiskReadBytes: Int64 = 0
+    private var prevDiskWriteBytes: Int64 = 0
     private var prevSampleTime: Date = Date()
+    private var hasDiskBaseline = false
 
     init() { start() }
     deinit { timer?.invalidate() }
@@ -99,27 +99,58 @@ final class SystemMetricsCollector: ObservableObject {
         )
     }
 
-    // MARK: - Disk I/O (iostat parse, delta between calls)
+    // MARK: - Disk I/O (IOBlockStorageDriver cumulative byte counters, delta between calls)
+    //
+    // Reads true cumulative read/write bytes from IOKit instead of shelling to `iostat`.
+    // `iostat -d` reports KB/t, tps, MB/s (aggregate, not read/write split) and the
+    // single-sample invocation never terminates — this is both correct and non-blocking.
 
     private func readDiskDelta() -> (readMbS: Double, writeMbS: Double) {
-        let output = shell("/usr/sbin/iostat", ["-d", "-n", "1", "1"])
-        let lines = output.components(separatedBy: "\n")
-        guard lines.count >= 3 else { return (0, 0) }
-        let parts = lines[2].split(separator: " ", omittingEmptySubsequences: true)
-        guard parts.count >= 3,
-              let readKB = Double(parts[1]),
-              let writeKB = Double(parts[2]) else { return (0, 0) }
+        let (readBytes, writeBytes) = Self.readCumulativeDiskBytes()
 
         let now = Date()
-        let elapsed = now.timeIntervalSince(prevSampleTime).clamped(to: 1...120)
-        let readDelta  = max(0, readKB  - prevDiskRead)  / 1024.0 / elapsed
-        let writeDelta = max(0, writeKB - prevDiskWrite) / 1024.0 / elapsed
+        let elapsed = now.timeIntervalSince(prevSampleTime).clamped(to: 1...600)
 
-        prevDiskRead  = readKB
-        prevDiskWrite = writeKB
-        prevSampleTime = now
+        defer {
+            prevDiskReadBytes = readBytes
+            prevDiskWriteBytes = writeBytes
+            prevSampleTime = now
+            hasDiskBaseline = true
+        }
 
+        // First sample only establishes a baseline; no rate yet.
+        guard hasDiskBaseline else { return (0, 0) }
+
+        let readDelta  = Double(max(0, readBytes  - prevDiskReadBytes))  / 1_048_576.0 / elapsed
+        let writeDelta = Double(max(0, writeBytes - prevDiskWriteBytes)) / 1_048_576.0 / elapsed
         return (readDelta, writeDelta)
+    }
+
+    /// Sums "Bytes (Read)" / "Bytes (Write)" from every IOBlockStorageDriver's Statistics dict.
+    static func readCumulativeDiskBytes() -> (read: Int64, write: Int64) {
+        var iterator: io_iterator_t = 0
+        guard IOServiceGetMatchingServices(kIOMainPortDefault,
+                                           IOServiceMatching("IOBlockStorageDriver"),
+                                           &iterator) == KERN_SUCCESS else { return (0, 0) }
+        defer { IOObjectRelease(iterator) }
+
+        var totalRead: Int64 = 0
+        var totalWrite: Int64 = 0
+
+        var service = IOIteratorNext(iterator)
+        while service != IO_OBJECT_NULL {
+            defer {
+                IOObjectRelease(service)
+                service = IOIteratorNext(iterator)
+            }
+            var props: Unmanaged<CFMutableDictionary>?
+            guard IORegistryEntryCreateCFProperties(service, &props, kCFAllocatorDefault, 0) == kIOReturnSuccess,
+                  let dict = props?.takeRetainedValue() as NSDictionary?,
+                  let stats = dict["Statistics"] as? NSDictionary else { continue }
+            totalRead  += (stats["Bytes (Read)"]  as? Int64) ?? 0
+            totalWrite += (stats["Bytes (Write)"] as? Int64) ?? 0
+        }
+        return (totalRead, totalWrite)
     }
 
     // MARK: - Real power (BatteryData.SystemPower from IORegistry)

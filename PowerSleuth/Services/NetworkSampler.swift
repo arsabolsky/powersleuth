@@ -64,45 +64,41 @@ final class NetworkSampler: ObservableObject {
         let retransmits: Int
     }
 
-    static func runNettop() async -> [NettopRow] {
+    nonisolated static func runNettop() async -> [NettopRow] {
         await withCheckedContinuation { continuation in
             DispatchQueue.global(qos: .utility).async {
-                // -l 1 = one sample, -x = extended (raw numbers), -P = per-process only
-                let output = shell("/usr/bin/nettop", ["-l", "1", "-x", "-P"])
+                // -P = per-process, -L 1 = one snapshot, -x = raw byte counts,
+                // -J = emit ONLY these columns as CSV (deterministic, no padding/tabs).
+                let output = shell("/usr/bin/nettop",
+                    ["-P", "-L", "1", "-x", "-J", "bytes_in,bytes_out,re-tx"])
                 let rows = parseNettop(output)
                 continuation.resume(returning: rows)
             }
         }
     }
 
-    static func parseNettop(_ output: String) -> [NettopRow] {
+    /// Parses nettop `-J` CSV output. Each line is:  `name.pid,bytes_in,bytes_out,re-tx,`
+    /// with a leading header row (`,bytes_in,bytes_out,re-tx,`). nettop emits commas, not tabs.
+    nonisolated static func parseNettop(_ output: String) -> [NettopRow] {
         var results: [NettopRow] = []
         let lines = output.components(separatedBy: "\n")
-        guard lines.count > 1 else { return [] }
 
-        // Find column indices from header
-        let header = lines[0].components(separatedBy: "\t")
-        guard let bytesInIdx  = header.firstIndex(of: "bytes_in"),
-              let bytesOutIdx = header.firstIndex(of: "bytes_out"),
-              let retxIdx     = header.firstIndex(of: "re-tx") else { return [] }
-
-        for line in lines.dropFirst() {
+        for line in lines {
             guard !line.isEmpty else { continue }
-            let cols = line.components(separatedBy: "\t")
-            guard cols.count > max(bytesInIdx, bytesOutIdx, retxIdx) else { continue }
+            let cols = line.components(separatedBy: ",")
+            guard cols.count >= 3 else { continue }
 
-            // First column: "processname.pid"
+            // First column: "processname.pid" — drop the trailing numeric pid component.
             let namePid = cols[0]
+            guard !namePid.isEmpty, Int(namePid.split(separator: ".").last ?? "") != nil else { continue }
             let name = String(namePid.split(separator: ".").dropLast().joined(separator: "."))
             guard !name.isEmpty else { continue }
 
-            let bytesIn  = Int64(cols[bytesInIdx])  ?? 0
-            let bytesOut = Int64(cols[bytesOutIdx]) ?? 0
-            let retx     = Int(cols[retxIdx])       ?? 0
+            let bytesIn  = Int64(cols[1]) ?? 0
+            let bytesOut = Int64(cols[2]) ?? 0
+            let retx     = cols.count > 3 ? (Int(cols[3]) ?? 0) : 0
 
-            if bytesIn > 0 || bytesOut > 0 {
-                results.append(NettopRow(name: name, bytesIn: bytesIn, bytesOut: bytesOut, retransmits: retx))
-            }
+            results.append(NettopRow(name: name, bytesIn: bytesIn, bytesOut: bytesOut, retransmits: retx))
         }
         return results.sorted { ($0.bytesIn + $0.bytesOut) > ($1.bytesIn + $1.bytesOut) }
     }

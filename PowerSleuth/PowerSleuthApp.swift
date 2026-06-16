@@ -52,7 +52,20 @@ final class AppCoordinator {
     private var healthTimer: Timer?
 
     init() {
-        try? DatabaseService.shared.pruneOldData()
+        // Register default values so @AppStorage (SettingsView) and raw UserDefaults
+        // reads (NarrativeEngine) agree. Without this, AI features read `false` until
+        // the user first toggles them, even though the UI shows them ON.
+        UserDefaults.standard.register(defaults: [
+            "ai.enableSummary": true,
+            "ai.enableFindings": true,
+            "ai.useAppleIntelligence": true,
+            "ai.useOllama": true,
+            "monitoring.sampleInterval": 30,
+            "monitoring.retentionDays": 30
+        ])
+
+        let retentionDays = UserDefaults.standard.integer(forKey: "monitoring.retentionDays")
+        try? DatabaseService.shared.pruneOldData(retentionDays: retentionDays > 0 ? retentionDays : 30)
         sampleHealthIfNeeded()
         healthTimer = Timer.scheduledTimer(withTimeInterval: 86400, repeats: true) { [weak self] _ in
             self?.sampleHealthIfNeeded()

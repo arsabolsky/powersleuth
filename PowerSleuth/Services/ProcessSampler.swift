@@ -32,7 +32,7 @@ final class ProcessSampler: ObservableObject {
 
     /// Runs `top -l 2 -s 1` — takes two 1-second samples; the second is accurate.
     /// Returns the top 30 processes sorted by energy impact.
-    static func runTopSample() async -> [ProcessSample] {
+    nonisolated static func runTopSample() async -> [ProcessSample] {
         await withCheckedContinuation { continuation in
             DispatchQueue.global(qos: .utility).async {
                 let output = shell("/usr/bin/top", ["-l", "2", "-s", "1",
@@ -44,47 +44,51 @@ final class ProcessSampler: ObservableObject {
         }
     }
 
-    // swiftlint:disable:next cyclomatic_complexity
-    static func parseTopOutput(_ output: String) -> [ProcessSample] {
-        // top -l 2 produces two full blocks. We want the SECOND block (after the second header).
-        let blocks = output.components(separatedBy: "PID")
-        guard blocks.count >= 3 else { return [] }      // at least 2 header splits
-        let secondBlock = "PID" + blocks[blocks.count - 1]
+    nonisolated static func parseTopOutput(_ output: String) -> [ProcessSample] {
+        // `top -l 2` prints two full blocks; the second sample carries accurate CPU/power.
+        // Find the LAST header line ("PID  COMMAND ...") and parse the rows after it.
+        let allLines = output.components(separatedBy: "\n")
+        guard let headerIdx = allLines.lastIndex(where: { $0.hasPrefix("PID") }) else { return [] }
 
         var results: [ProcessSample] = []
-        let lines = secondBlock.components(separatedBy: "\n").dropFirst()  // skip header line
         let now = Date()
 
-        for line in lines {
+        for line in allLines[(headerIdx + 1)...] {
+            // The COMMAND column may contain spaces ("Google Chrome He", "Claude Helper (R"),
+            // so parse the fixed trailing columns from the END:
+            //   PID  <command with spaces>  %CPU  MEM  POWER  STATE
             let parts = line.split(separator: " ", omittingEmptySubsequences: true)
-            guard parts.count >= 5 else { continue }
+            guard parts.count >= 6, let pid = Int(parts[0]) else { continue }
 
-            guard let pid = Int(parts[0]) else { continue }
-            let name = String(parts[1])
-            let cpuStr = String(parts[2]).replacingOccurrences(of: "%", with: "")
-            let memStr = String(parts[3])
-            let powerStr = String(parts[4])
-            let state = parts.count > 5 ? String(parts[5]) : "sleeping"
+            let state   = String(parts[parts.count - 1])
+            let powerStr = String(parts[parts.count - 2])
+            let memStr   = String(parts[parts.count - 3])
+            let cpuStr   = String(parts[parts.count - 4]).replacingOccurrences(of: "%", with: "")
+            let name     = parts[1..<(parts.count - 4)].joined(separator: " ")
 
-            guard let cpu = Double(cpuStr) else { continue }
-            let mem = parseMem(memStr)
-            let power = Double(powerStr) ?? 0
+            guard let cpu = Double(cpuStr), !name.isEmpty else { continue }
 
             results.append(ProcessSample(
                 id: nil, timestamp: now, pid: pid, name: name,
-                cpuPct: cpu, memMb: mem, energyImpact: power, state: state
+                cpuPct: cpu, memMb: parseMem(memStr),
+                energyImpact: Double(powerStr) ?? 0, state: state
             ))
         }
 
         return results.sorted { $0.energyImpact > $1.energyImpact }
     }
 
-    private static func parseMem(_ s: String) -> Double {
-        let lower = s.lowercased()
+    /// Parses `top`'s MEM column (e.g. "589M-", "1296M+", "7185K", "1.2G"). The trailing
+    /// "+"/"-" is a compression-change indicator and must be stripped before the unit.
+    nonisolated static func parseMem(_ s: String) -> Double {
+        let trimmed = s.replacingOccurrences(of: "+", with: "")
+            .replacingOccurrences(of: "-", with: "")
+        let lower = trimmed.lowercased()
         if lower.hasSuffix("g"), let v = Double(lower.dropLast()) { return v * 1024 }
         if lower.hasSuffix("m"), let v = Double(lower.dropLast()) { return v }
         if lower.hasSuffix("k"), let v = Double(lower.dropLast()) { return v / 1024 }
-        return Double(s) ?? 0
+        if lower.hasSuffix("b"), let v = Double(lower.dropLast()) { return v / 1_048_576 }
+        return Double(trimmed) ?? 0
     }
 }
 
