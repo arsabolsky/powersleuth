@@ -68,6 +68,7 @@ struct OnboardingView: View {
 
             MonitorRow(icon: "bolt.fill",         color: .yellow,  title: "Real Power Draw",      desc: "Actual Watts from the battery controller — not an estimate")
             MonitorRow(icon: "cpu.fill",           color: .blue,    title: "Per-Process Energy",   desc: "Same \"Energy Impact\" score Activity Monitor uses, every 60s")
+            MonitorRow(icon: "display",            color: .teal,    title: "GPU & Components",     desc: "GPU utilization + VRAM always; true CPU/GPU/ANE watts with Deep Power Mode")
             MonitorRow(icon: "memorychip.fill",    color: .purple,  title: "CPU & RAM",            desc: "System-wide CPU load, memory pressure, and swap activity")
             MonitorRow(icon: "network",            color: .green,   title: "Network I/O",          desc: "Per-app bytes in/out — data hogs burn battery on cellular too")
             MonitorRow(icon: "moon.fill",          color: .indigo,  title: "Sleep Drain",          desc: "Tracks drain while the lid is closed + what kept it awake")
@@ -102,7 +103,7 @@ struct OnboardingView: View {
 
             TipRow(num: "1", title: "Use your Mac normally",       desc: "The more variety in your sessions, the better the baseline. Don't change behavior for the tool.")
             TipRow(num: "2", title: "Check the Analysis tab daily", desc: "It updates every 60s. Look for patterns — does drain spike at certain times?")
-            TipRow(num: "3", title: "Compare Macs via Export",     desc: "Export → Device Profile from each Mac. Compare top consumers, sleep drain rate, and avg Watts.")
+            TipRow(num: "3", title: "Compare two Macs",            desc: "Export a Device Profile on each Mac, then open the Compare tab to see exactly which apps and metrics differ (e.g. Helium vs Chrome).")
             TipRow(num: "4", title: "Watch the sleep drain rate",  desc: ">2%/hr overnight = something is keeping your Mac awake. Check \"Preventing Sleep\" in the popover.")
             TipRow(num: "5", title: "Filter by time window",       desc: "History charts let you isolate specific days — great for \"why was battery so bad Tuesday?\"")
         }
@@ -110,31 +111,7 @@ struct OnboardingView: View {
     }
 
     private var setupPage: some View {
-        VStack(spacing: 20) {
-            Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 48))
-                .foregroundColor(.green)
-            Text("Ready to Go")
-                .font(.title2).bold()
-
-            VStack(alignment: .leading, spacing: 12) {
-                CheckRow(text: "No special permissions required")
-                CheckRow(text: "No root access or system extensions")
-                CheckRow(text: "Data stays on your Mac — no cloud sync")
-                CheckRow(text: "~30 MB RAM, samples every 30–60 seconds")
-            }
-            .padding(.vertical, 8)
-
-            VStack(spacing: 8) {
-                Text("Add to Login Items for continuous monitoring")
-                    .font(.callout).foregroundColor(.secondary)
-                Button("Open Login Items Settings") {
-                    NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.LoginItems-Settings.extension")!)
-                }
-                .buttonStyle(.bordered)
-            }
-        }
-        .padding(40)
+        SetupOnboardingPage()
     }
 
     private var aiSetupPage: some View {
@@ -201,6 +178,65 @@ private struct CheckRow: View {
             Image(systemName: "checkmark").foregroundColor(.green).font(.caption)
             Text(text).font(.callout)
         }
+    }
+}
+
+// MARK: - Setup page (Launch at Login + optional Deep Power Mode)
+
+private struct SetupOnboardingPage: View {
+    @ObservedObject private var deep = DeepPowerSampler.shared
+    @AppStorage("deepPower.enabled") private var deepEnabled = false
+    @State private var launchAtLogin = LoginItem.isEnabled
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(spacing: 12) {
+                Image(systemName: "checkmark.circle.fill").font(.system(size: 36)).foregroundColor(.green)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Set Up Monitoring").font(.title2).bold()
+                    Text("Core monitoring needs no permissions. Two optional steps:")
+                        .font(.caption).foregroundColor(.secondary)
+                }
+            }
+
+            Toggle(isOn: $launchAtLogin) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Launch at Login").font(.callout).fontWeight(.medium)
+                    Text("Keeps monitoring running across reboots — needed for a reliable multi-day baseline.")
+                        .font(.caption).foregroundColor(.secondary)
+                }
+            }
+            .onChange(of: launchAtLogin) { _, on in
+                if !LoginItem.setEnabled(on) { launchAtLogin = LoginItem.isEnabled }
+            }
+
+            Divider()
+
+            Toggle(isOn: $deepEnabled) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Deep Power Mode — true per-app GPU/CPU watts").font(.callout).fontWeight(.medium)
+                    Text("Optional. Uses Apple's powermetrics (prompts for your admin password) to measure CPU/GPU/ANE watts and which app is hammering the GPU. You can also enable this later in Settings.")
+                        .font(.caption).foregroundColor(.secondary)
+                }
+            }
+            .disabled(!deep.available)
+            .onChange(of: deepEnabled) { _, on in
+                if on { Task { let ok = await deep.start(); if !ok { deepEnabled = false } } }
+                else { deep.stop() }
+            }
+            if deep.isRunning {
+                Label("Deep Power Mode active", systemImage: "bolt.fill").font(.caption).foregroundColor(.green)
+            }
+
+            Divider()
+
+            VStack(alignment: .leading, spacing: 8) {
+                CheckRow(text: "Data stays on your Mac — no cloud sync")
+                CheckRow(text: "Core monitoring is lightweight (~30 MB, samples every 30–60s)")
+            }
+        }
+        .padding(32)
+        .onAppear { launchAtLogin = LoginItem.isEnabled }
     }
 }
 
