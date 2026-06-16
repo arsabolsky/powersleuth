@@ -1,0 +1,67 @@
+name: PowerSleuth
+options:
+  bundleIdPrefix: com.arsabolsky
+  deploymentTarget:
+    macOS: "13.0"
+  xcodeVersion: "15.0"
+  createIntermediateGroups: true
+
+packages:
+  GRDB:
+    url: https://github.com/groue/GRDB.swift
+    from: "6.0.0"
+
+targets:
+  PowerSleuth:
+    type: application
+    platform: macOS
+    deploymentTarget: "13.0"
+    sources:
+      - PowerSleuth
+    dependencies:
+      - package: GRDB
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.arsabolsky.powersleuth
+        SWIFT_VERSION: "5.9"
+        MACOSX_DEPLOYMENT_TARGET: "13.0"
+        CODE_SIGN_STYLE: Automatic
+        INFOPLIST_FILE: PowerSleuth/Info.plist
+        CODE_SIGN_IDENTITY: "-"
+        COMBINE_HIDPI_IMAGES: YES
+        ENABLE_HARDENED_RUNTIME: NO
+    entitlements:
+      path: PowerSleuth/PowerSleuth.entitlements
+      properties:
+        com.apple.security.app-sandbox: false
+
+  PowerSleuthTests:
+    type: bundle.unit-test
+    platform: macOS
+    deploymentTarget: "13.0"
+    sources:
+      - PowerSleuthTests
+    dependencies:
+      - target: PowerSleuth
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.arsabolsky.powersleuthTests
+        SWIFT_VERSION: "5.9"
+
+schemes:
+  PowerSleuth:
+    build:
+      targets:
+        PowerSleuth: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - PowerSleuthTests
+    profile:
+      config: Release
+    analyze:
+      config: Debug
+    archive:
+      config: Release

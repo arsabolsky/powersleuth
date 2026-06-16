@@ -1,0 +1,47 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    name: Build & Test
+    runs-on: macos-14
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install xcodegen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Resolve SPM packages
+        run: |
+          xcodebuild -resolvePackageDependencies \
+            -scheme PowerSleuth \
+            -derivedDataPath .build
+
+      - name: Build
+        run: |
+          xcodebuild build \
+            -scheme PowerSleuth \
+            -configuration Release \
+            -derivedDataPath .build \
+            CODE_SIGN_IDENTITY="-" \
+            CODE_SIGNING_REQUIRED=NO \
+            | xcpretty
+
+      - name: Test
+        run: |
+          xcodebuild test \
+            -scheme PowerSleuth \
+            -destination 'platform=macOS' \
+            CODE_SIGN_IDENTITY="-" \
+            CODE_SIGNING_REQUIRED=NO \
+            | xcpretty

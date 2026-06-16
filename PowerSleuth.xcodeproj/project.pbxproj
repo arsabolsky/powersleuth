@@ -1,0 +1,516 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		18EB1C01342349DF544258FC /* PowerSleuthApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9B7E33742CD2A81E0A9EB16 /* PowerSleuthApp.swift */; };
+		19135E583F37D7F7D08758A3 /* PowerAssertion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D1F39C82EB3055642815506 /* PowerAssertion.swift */; };
+		3E05ABF21589C904F59CAE2C /* AnalysisView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30D1CF17850E7A2784C80C83 /* AnalysisView.swift */; };
+		3F5CA9C289BB167774F3A7E1 /* AssertionMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 465088F6CC01DDBE5D14839C /* AssertionMonitor.swift */; };
+		43AF54B920E648A53BF4A656 /* StatusLabel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C88B5F53C38E44958B894A9 /* StatusLabel.swift */; };
+		465C392E27BE9BCD3F5BEF47 /* SessionTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48A746ED80028C5FD34CAA41 /* SessionTracker.swift */; };
+		6C439B3A7EBD4A5412BE180F /* BatteryMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 300CD5D2A9A5BB13CE564150 /* BatteryMonitor.swift */; };
+		73C854C19E6DB00F25FC5C51 /* BatterySnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3401274ACCDADF04A21A7B1 /* BatterySnapshot.swift */; };
+		7E79BCB84FAE827C2E240A6E /* HistoryChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A47B20231A5547E0222D5A23 /* HistoryChartView.swift */; };
+		8905FA39F1E59524B7BB4833 /* DrainSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 681A8FC7696A0F691F05133A /* DrainSession.swift */; };
+		9A5F81FB725C4C69DBF07ADE /* GRDB in Frameworks */ = {isa = PBXBuildFile; productRef = FBD3C4D4E72CFE457A74FC03 /* GRDB */; };
+		B76DF8E77CC7C958F51F1A11 /* AnalysisEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = E97DC7A51CEC16DF8F6C0B84 /* AnalysisEngine.swift */; };
+		D260746A5971F862EBCD0F64 /* PowerSleuthTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9063589DBAA6796F111D2D33 /* PowerSleuthTests.swift */; };
+		DDABE8589B47B5BA19E302F8 /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 538C0FA2FB76A0FB291988F7 /* DashboardView.swift */; };
+		E01EC22A4AABB57B77B449CD /* DatabaseService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19277F05617B05E9637011DB /* DatabaseService.swift */; };
+		EA26D9E4862797A6C26C439E /* DrainDiagnosis.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32B19FF9B937654C9DC6B48D /* DrainDiagnosis.swift */; };
+		F4AEA023E1A22063AA85A1A4 /* MenuBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F788079F05B67393E654647 /* MenuBarView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		9AB231BD2E38D268909447D4 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 378DAAE459AAD3CA69848F0D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 9D36A43B46C5B17957D5BFB7;
+			remoteInfo = PowerSleuth;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		0C88B5F53C38E44958B894A9 /* StatusLabel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusLabel.swift; sourceTree = "<group>"; };
+		19277F05617B05E9637011DB /* DatabaseService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatabaseService.swift; sourceTree = "<group>"; };
+		2D1F39C82EB3055642815506 /* PowerAssertion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PowerAssertion.swift; sourceTree = "<group>"; };
+		300CD5D2A9A5BB13CE564150 /* BatteryMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BatteryMonitor.swift; sourceTree = "<group>"; };
+		30D1CF17850E7A2784C80C83 /* AnalysisView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalysisView.swift; sourceTree = "<group>"; };
+		32B19FF9B937654C9DC6B48D /* DrainDiagnosis.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrainDiagnosis.swift; sourceTree = "<group>"; };
+		3E3506346C2341081552C23F /* PowerSleuth.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PowerSleuth.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		465088F6CC01DDBE5D14839C /* AssertionMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssertionMonitor.swift; sourceTree = "<group>"; };
+		48A746ED80028C5FD34CAA41 /* SessionTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionTracker.swift; sourceTree = "<group>"; };
+		4F788079F05B67393E654647 /* MenuBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarView.swift; sourceTree = "<group>"; };
+		538C0FA2FB76A0FB291988F7 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
+		5A89FED6F2088E1B4CCE25D7 /* PowerSleuth.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PowerSleuth.entitlements; sourceTree = "<group>"; };
+		681A8FC7696A0F691F05133A /* DrainSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrainSession.swift; sourceTree = "<group>"; };
+		9063589DBAA6796F111D2D33 /* PowerSleuthTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PowerSleuthTests.swift; sourceTree = "<group>"; };
+		A47B20231A5547E0222D5A23 /* HistoryChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryChartView.swift; sourceTree = "<group>"; };
+		A495E838B3A81F7A5282133A /* PowerSleuthTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PowerSleuthTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A9B7E33742CD2A81E0A9EB16 /* PowerSleuthApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PowerSleuthApp.swift; sourceTree = "<group>"; };
+		D3401274ACCDADF04A21A7B1 /* BatterySnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BatterySnapshot.swift; sourceTree = "<group>"; };
+		DDC3A305293650E9452465DA /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		E97DC7A51CEC16DF8F6C0B84 /* AnalysisEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalysisEngine.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		68AF6943C89BBBDEBA21F3EF /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				9A5F81FB725C4C69DBF07ADE /* GRDB in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		100BA061A54802A29711566D /* PowerSleuth */ = {
+			isa = PBXGroup;
+			children = (
+				DDC3A305293650E9452465DA /* Info.plist */,
+				5A89FED6F2088E1B4CCE25D7 /* PowerSleuth.entitlements */,
+				A9B7E33742CD2A81E0A9EB16 /* PowerSleuthApp.swift */,
+				A76553E0B3444CB60D687A9B /* Models */,
+				7694BBF47AE6209FA558BF0B /* Services */,
+				F010A8DFCAEFE0266A0BACC8 /* Views */,
+			);
+			path = PowerSleuth;
+			sourceTree = "<group>";
+		};
+		6944C02B99E9E7A91CF06238 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				3E3506346C2341081552C23F /* PowerSleuth.app */,
+				A495E838B3A81F7A5282133A /* PowerSleuthTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		7694BBF47AE6209FA558BF0B /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				E97DC7A51CEC16DF8F6C0B84 /* AnalysisEngine.swift */,
+				465088F6CC01DDBE5D14839C /* AssertionMonitor.swift */,
+				300CD5D2A9A5BB13CE564150 /* BatteryMonitor.swift */,
+				19277F05617B05E9637011DB /* DatabaseService.swift */,
+				48A746ED80028C5FD34CAA41 /* SessionTracker.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		80AD1185DEBA68CBF798D73E = {
+			isa = PBXGroup;
+			children = (
+				100BA061A54802A29711566D /* PowerSleuth */,
+				FAF2F3D899BFD3327FC34CAD /* PowerSleuthTests */,
+				6944C02B99E9E7A91CF06238 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		A76553E0B3444CB60D687A9B /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				D3401274ACCDADF04A21A7B1 /* BatterySnapshot.swift */,
+				32B19FF9B937654C9DC6B48D /* DrainDiagnosis.swift */,
+				681A8FC7696A0F691F05133A /* DrainSession.swift */,
+				2D1F39C82EB3055642815506 /* PowerAssertion.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		F010A8DFCAEFE0266A0BACC8 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				30D1CF17850E7A2784C80C83 /* AnalysisView.swift */,
+				538C0FA2FB76A0FB291988F7 /* DashboardView.swift */,
+				A47B20231A5547E0222D5A23 /* HistoryChartView.swift */,
+				4F788079F05B67393E654647 /* MenuBarView.swift */,
+				0C88B5F53C38E44958B894A9 /* StatusLabel.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		FAF2F3D899BFD3327FC34CAD /* PowerSleuthTests */ = {
+			isa = PBXGroup;
+			children = (
+				9063589DBAA6796F111D2D33 /* PowerSleuthTests.swift */,
+			);
+			path = PowerSleuthTests;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		7E6DF2DC9813E1A220FBBC49 /* PowerSleuthTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 11EBF550AFFE3953D6734320 /* Build configuration list for PBXNativeTarget "PowerSleuthTests" */;
+			buildPhases = (
+				D98E015148EB7D5E4A68CCB0 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				266FED0A5B376287A9275499 /* PBXTargetDependency */,
+			);
+			name = PowerSleuthTests;
+			packageProductDependencies = (
+			);
+			productName = PowerSleuthTests;
+			productReference = A495E838B3A81F7A5282133A /* PowerSleuthTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		9D36A43B46C5B17957D5BFB7 /* PowerSleuth */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = CB44C848858B35AE8788B93A /* Build configuration list for PBXNativeTarget "PowerSleuth" */;
+			buildPhases = (
+				74B7A1B460B67001689636AD /* Sources */,
+				68AF6943C89BBBDEBA21F3EF /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = PowerSleuth;
+			packageProductDependencies = (
+				FBD3C4D4E72CFE457A74FC03 /* GRDB */,
+			);
+			productName = PowerSleuth;
+			productReference = 3E3506346C2341081552C23F /* PowerSleuth.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		378DAAE459AAD3CA69848F0D /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1500;
+				TargetAttributes = {
+					9D36A43B46C5B17957D5BFB7 = {
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 3282F3D468C7A0004E0626BB /* Build configuration list for PBXProject "PowerSleuth" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 80AD1185DEBA68CBF798D73E;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				8373449BCCC7A34BA9B42612 /* XCRemoteSwiftPackageReference "GRDB.swift" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 6944C02B99E9E7A91CF06238 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				9D36A43B46C5B17957D5BFB7 /* PowerSleuth */,
+				7E6DF2DC9813E1A220FBBC49 /* PowerSleuthTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		74B7A1B460B67001689636AD /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B76DF8E77CC7C958F51F1A11 /* AnalysisEngine.swift in Sources */,
+				3E05ABF21589C904F59CAE2C /* AnalysisView.swift in Sources */,
+				3F5CA9C289BB167774F3A7E1 /* AssertionMonitor.swift in Sources */,
+				6C439B3A7EBD4A5412BE180F /* BatteryMonitor.swift in Sources */,
+				73C854C19E6DB00F25FC5C51 /* BatterySnapshot.swift in Sources */,
+				DDABE8589B47B5BA19E302F8 /* DashboardView.swift in Sources */,
+				E01EC22A4AABB57B77B449CD /* DatabaseService.swift in Sources */,
+				EA26D9E4862797A6C26C439E /* DrainDiagnosis.swift in Sources */,
+				8905FA39F1E59524B7BB4833 /* DrainSession.swift in Sources */,
+				7E79BCB84FAE827C2E240A6E /* HistoryChartView.swift in Sources */,
+				F4AEA023E1A22063AA85A1A4 /* MenuBarView.swift in Sources */,
+				19135E583F37D7F7D08758A3 /* PowerAssertion.swift in Sources */,
+				18EB1C01342349DF544258FC /* PowerSleuthApp.swift in Sources */,
+				465C392E27BE9BCD3F5BEF47 /* SessionTracker.swift in Sources */,
+				43AF54B920E648A53BF4A656 /* StatusLabel.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D98E015148EB7D5E4A68CCB0 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D260746A5971F862EBCD0F64 /* PowerSleuthTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		266FED0A5B376287A9275499 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 9D36A43B46C5B17957D5BFB7 /* PowerSleuth */;
+			targetProxy = 9AB231BD2E38D268909447D4 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		215187EBBC1A16484D0C00CA /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = PowerSleuth/PowerSleuth.entitlements;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_HARDENED_RUNTIME = NO;
+				INFOPLIST_FILE = PowerSleuth/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.arsabolsky.powersleuth;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 5.9;
+			};
+			name = Debug;
+		};
+		74ABD90803CA33796C0F64BB /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = PowerSleuth/PowerSleuth.entitlements;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_HARDENED_RUNTIME = NO;
+				INFOPLIST_FILE = PowerSleuth/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.arsabolsky.powersleuth;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 5.9;
+			};
+			name = Release;
+		};
+		7C7CC49483C507CD9CDCC7C6 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				COMBINE_HIDPI_IMAGES = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.arsabolsky.powersleuthTests;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 5.9;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/PowerSleuth.app/Contents/MacOS/PowerSleuth";
+			};
+			name = Release;
+		};
+		92E68334CD4D8CB314EDD9FA /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				COMBINE_HIDPI_IMAGES = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.arsabolsky.powersleuthTests;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 5.9;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/PowerSleuth.app/Contents/MacOS/PowerSleuth";
+			};
+			name = Debug;
+		};
+		D107D86E3BBEB38BC2BCC2DB /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		F56583E87B05296FB4A29598 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		11EBF550AFFE3953D6734320 /* Build configuration list for PBXNativeTarget "PowerSleuthTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				92E68334CD4D8CB314EDD9FA /* Debug */,
+				7C7CC49483C507CD9CDCC7C6 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		3282F3D468C7A0004E0626BB /* Build configuration list for PBXProject "PowerSleuth" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F56583E87B05296FB4A29598 /* Debug */,
+				D107D86E3BBEB38BC2BCC2DB /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		CB44C848858B35AE8788B93A /* Build configuration list for PBXNativeTarget "PowerSleuth" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				215187EBBC1A16484D0C00CA /* Debug */,
+				74ABD90803CA33796C0F64BB /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		8373449BCCC7A34BA9B42612 /* XCRemoteSwiftPackageReference "GRDB.swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/groue/GRDB.swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 6.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		FBD3C4D4E72CFE457A74FC03 /* GRDB */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8373449BCCC7A34BA9B42612 /* XCRemoteSwiftPackageReference "GRDB.swift" */;
+			productName = GRDB;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 378DAAE459AAD3CA69848F0D /* Project object */;
+}
