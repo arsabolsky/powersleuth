@@ -57,7 +57,8 @@ final class BatterySnapshotTests: XCTestCase {
             id: nil, timestamp: Date(),
             percentage: 80, voltageMv: 12000, amperageMa: -2000,
             temperatureC: 35.0, isCharging: false,
-            powerSource: "Battery Power", thermalState: 0, lowPowerMode: false
+            powerSource: "Battery Power", thermalState: 0, lowPowerMode: false,
+            systemWatts: 0
         )
         XCTAssertEqual(s.watts, 24.0, accuracy: 0.001)
     }
@@ -67,7 +68,8 @@ final class BatterySnapshotTests: XCTestCase {
             id: nil, timestamp: Date(),
             percentage: 80, voltageMv: 12000, amperageMa: 1000,
             temperatureC: 35.0, isCharging: true,
-            powerSource: "AC Power", thermalState: 0, lowPowerMode: false
+            powerSource: "AC Power", thermalState: 0, lowPowerMode: false,
+            systemWatts: 0
         )
         XCTAssertEqual(s.watts, 0.0)
     }
