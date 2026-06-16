@@ -213,7 +213,8 @@ final class DeepPowerSampler: ObservableObject {
         try? DatabaseService.shared.saveComponentPower(&comp)
 
         let notable = s.tasks
-            .filter { $0.gpuMsPerSec > 0 || $0.energyImpact > 1 }
+            // DEAD_TASKS is powermetrics' rollup of exited processes — not a real app.
+            .filter { $0.name != "DEAD_TASKS" && ($0.gpuMsPerSec > 0 || $0.energyImpact > 1) }
             .sorted { a, b in
                 if a.gpuMsPerSec != b.gpuMsPerSec { return a.gpuMsPerSec > b.gpuMsPerSec }
                 return a.energyImpact > b.energyImpact

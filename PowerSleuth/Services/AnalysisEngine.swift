@@ -105,19 +105,16 @@ final class AnalysisEngine: Sendable {
             culprits.append(String(format: "High system CPU load: %.0f%% — active work is the drain source", cpuPct))
         }
 
-        // Prefer measured per-process GPU (Deep Power Mode) over inference when available.
-        let deepGpuHeavy: [ProcessPowerAggregation] = {
-            guard (try? db.hasProcessPower(since: since)) == true else { return [] }
-            return ((try? db.fetchProcessPowerAggregations(since: since, limit: 5)) ?? []).filter { $0.isGpuHeavy }
-        }()
-
-        if let top = deepGpuHeavy.first {
-            culprits.append(String(format: "GPU-heavy app: %@ — %.0f ms/s of GPU time (measured). Sustained GPU work is energy-dense.", top.name, top.avgGpuMsPerSec))
+        // GPU drain. Deep Power Mode gives true *system* GPU watts (Apple Silicon doesn't
+        // expose per-process GPU, so we attribute to the top energy-impact apps by inference).
+        let measuredGpuW = (try? db.fetchAverageComponentPower(since: since))?.gpuW ?? 0
+        let suspect = highImpactProcesses.first?.name ?? topProcess?.name
+        if measuredGpuW > 1.0 {
+            let who = suspect.map { " — likely \($0) (top energy consumer)" } ?? ""
+            culprits.append(String(format: "GPU drawing %.1f W on average (measured)%@", measuredGpuW, who))
         } else if gpuPct > 40 {
-            // Per-process GPU isn't available without admin, so name the likely app by inference.
-            let suspect = highImpactProcesses.first?.name ?? topProcess?.name
             if let s = suspect {
-                culprits.append(String(format: "GPU utilization %.0f%% — likely driven by %@ (enable Deep Power Mode for true per-app GPU watts)", gpuPct, s))
+                culprits.append(String(format: "GPU utilization %.0f%% — likely driven by %@ (enable Deep Power Mode for measured GPU watts)", gpuPct, s))
             } else {
                 culprits.append(String(format: "Sustained GPU utilization %.0f%% — GPU-dense work is adding drain", gpuPct))
             }

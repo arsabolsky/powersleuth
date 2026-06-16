@@ -197,7 +197,7 @@ private struct MonitoringSettingsPane: View {
             } header: {
                 Text("Deep Power Mode (requires admin)")
             } footer: {
-                Text("Runs Apple's powermetrics with one admin prompt per launch to measure true CPU/GPU/ANE wattage and per-process GPU time — the only way to see if an app (e.g. a browser) is hammering the GPU. Off by default; all other monitoring works without it.")
+                Text("Installs a background helper (one admin prompt, once) that runs Apple's powermetrics to measure true CPU/GPU/ANE wattage plus per-process CPU and energy. Apple Silicon doesn't expose per-app GPU, so GPU watts are system-wide. Off by default; all other monitoring works without it.")
                     .font(.caption).foregroundColor(.secondary)
             }
 

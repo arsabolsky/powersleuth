@@ -215,7 +215,7 @@ private struct SetupOnboardingPage: View {
             Toggle(isOn: $deepEnabled) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Deep Power Mode — true per-app GPU/CPU watts").font(.callout).fontWeight(.medium)
-                    Text("Optional. Uses Apple's powermetrics (prompts for your admin password) to measure CPU/GPU/ANE watts and which app is hammering the GPU. You can also enable this later in Settings.")
+                    Text("Optional. Installs a background helper (one admin prompt) running Apple's powermetrics to measure true CPU/GPU/ANE watts plus per-process CPU/energy. You can also enable this later in Settings.")
                         .font(.caption).foregroundColor(.secondary)
                 }
             }

@@ -216,6 +216,17 @@ final class DatabaseService: Sendable {
         }
     }
 
+    /// Average measured component watts over the window (Deep Power Mode). nil if no data.
+    func fetchAverageComponentPower(since date: Date) throws -> (cpuW: Double, gpuW: Double, aneW: Double)? {
+        try dbQueue.read { db in
+            guard let row = try Row.fetchOne(db, sql: """
+                SELECT AVG(cpuWatts), AVG(gpuWatts), AVG(aneWatts), COUNT(*)
+                FROM component_power_samples WHERE timestamp >= ?
+                """, arguments: [date]), (row[3] ?? 0) > 0 else { return nil }
+            return (row[0] ?? 0, row[1] ?? 0, row[2] ?? 0)
+        }
+    }
+
     /// True when Deep Power Mode has recorded any data in the window.
     func hasProcessPower(since date: Date) throws -> Bool {
         try dbQueue.read { db in
