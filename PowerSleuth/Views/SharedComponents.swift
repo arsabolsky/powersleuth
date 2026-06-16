@@ -97,3 +97,13 @@ struct MetricCell: View {
         }
     }
 }
+
+// MARK: - Safe collection subscript
+
+extension Collection {
+    /// Returns the element at `index` if it is in bounds, otherwise nil.
+    /// Used for thermal-state label/color lookups keyed by an Int that may be out of range.
+    subscript(safe index: Index) -> Element? {
+        indices.contains(index) ? self[index] : nil
+    }
+}
