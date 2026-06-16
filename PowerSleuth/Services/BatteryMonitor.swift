@@ -54,7 +54,9 @@ final class BatteryMonitor: ObservableObject {
         guard array.count > 0 else { return nil }
         let src = array[0] as CFTypeRef
 
-        guard let rawDesc = IOPSGetPowerSourceDescription(blob, src)?.takeRetainedValue()
+        // IOPSGetPowerSourceDescription is a "Get" function (+0, caller must NOT release).
+        // Using takeRetainedValue() here over-releases the dictionary and crashes (EXC_BAD_ACCESS).
+        guard let rawDesc = IOPSGetPowerSourceDescription(blob, src)?.takeUnretainedValue()
         else { return nil }
 
         let desc = rawDesc as NSDictionary
