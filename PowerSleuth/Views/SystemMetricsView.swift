@@ -13,6 +13,7 @@ struct SystemMetricsView: View {
                 liveStatsGrid
                 powerChart
                 cpuChart
+                gpuChart
                 ramChart
                 diskChart
             }
@@ -47,6 +48,10 @@ struct SystemMetricsView: View {
                            icon: "cpu.fill", color: cpuColor(m.cpuUsedPct))
                 MiniMetric(label: "RAM Pressure", value: String(format: "%.0f%%", m.ramPressurePct),
                            icon: "memorychip.fill", color: ramColor(m.ramPressurePct))
+                MiniMetric(label: "GPU", value: String(format: "%.0f%%", m.gpuUtilPct),
+                           icon: "display", color: gpuColor(m.gpuUtilPct))
+                MiniMetric(label: "VRAM", value: m.vramInUseMb >= 1024 ? String(format: "%.1f GB", m.vramInUseMb / 1024) : String(format: "%.0f MB", m.vramInUseMb),
+                           icon: "memorychip", color: .teal)
                 MiniMetric(label: "Load Avg", value: String(format: "%.2f", m.loadAvg1m),
                            icon: "gauge.medium", color: .secondary)
             }
@@ -80,6 +85,21 @@ struct SystemMetricsView: View {
             }
             .chartYScale(domain: 0...100)
             .chartForegroundStyleScale(["User": Color.blue, "System": Color.purple])
+            .chartXAxis { AxisMarks(values: .stride(by: axisStride)) { _ in AxisGridLine(); AxisValueLabel(format: axisFormat) } }
+        }
+    }
+
+    private var gpuChart: some View {
+        ChartCard(title: "GPU Utilization (%)") {
+            Chart(metrics) { m in
+                LineMark(x: .value("t", m.timestamp), y: .value("%", m.gpuUtilPct))
+                    .foregroundStyle(.teal)
+                    .interpolationMethod(.catmullRom)
+                AreaMark(x: .value("t", m.timestamp), y: .value("%", m.gpuUtilPct))
+                    .foregroundStyle(.teal.opacity(0.15))
+                    .interpolationMethod(.catmullRom)
+            }
+            .chartYScale(domain: 0...100)
             .chartXAxis { AxisMarks(values: .stride(by: axisStride)) { _ in AxisGridLine(); AxisValueLabel(format: axisFormat) } }
         }
     }
@@ -124,6 +144,7 @@ struct SystemMetricsView: View {
     }
     private func cpuColor(_ pct: Double) -> Color { pct > 70 ? .red : pct > 40 ? .orange : .blue }
     private func ramColor(_ pct: Double) -> Color { pct > 80 ? .red : pct > 60 ? .orange : .purple }
+    private func gpuColor(_ pct: Double) -> Color { pct > 70 ? .red : pct > 40 ? .orange : .teal }
 
     private func loadData() {
         let since = Date().addingTimeInterval(-window.lookback)

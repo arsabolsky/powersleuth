@@ -34,6 +34,7 @@ struct DashboardView: View {
                 Label("History",   systemImage: "chart.line.uptrend.xyaxis").tag(4)
             }
             Section("Tools") {
+                Label("Compare",   systemImage: "arrow.left.arrow.right.square").tag(8)
                 Label("Export",    systemImage: "square.and.arrow.up").tag(5)
                 Label("Help",      systemImage: "questionmark.circle").tag(6)
                 Label("Settings",  systemImage: "gear").tag(7)
@@ -56,6 +57,7 @@ struct DashboardView: View {
         case 5: ExportView()
         case 6: HelpView()
         case 7: SettingsView()
+        case 8: CompareView()
         default: EmptyView()
         }
     }

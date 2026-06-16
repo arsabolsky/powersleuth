@@ -66,6 +66,9 @@ final class AnalysisEngine: Sendable {
         // 7. System metrics context
         let cpuPct = latestMetrics?.cpuUsedPct ?? 0
         let ramPressure = latestMetrics?.ramPressurePct ?? 0
+        // Windowed GPU average (falls back to the latest sample).
+        let avgGpu = (try? db.fetchAverageSystemMetrics(since: since))?.avgGpu ?? 0
+        let gpuPct = max(avgGpu, latestMetrics?.gpuUtilPct ?? 0)
 
         // 8. Build culprit list (priority order)
         var culprits: [String] = []
@@ -100,6 +103,24 @@ final class AnalysisEngine: Sendable {
 
         if cpuPct > 50 {
             culprits.append(String(format: "High system CPU load: %.0f%% — active work is the drain source", cpuPct))
+        }
+
+        // Prefer measured per-process GPU (Deep Power Mode) over inference when available.
+        let deepGpuHeavy: [ProcessPowerAggregation] = {
+            guard (try? db.hasProcessPower(since: since)) == true else { return [] }
+            return ((try? db.fetchProcessPowerAggregations(since: since, limit: 5)) ?? []).filter { $0.isGpuHeavy }
+        }()
+
+        if let top = deepGpuHeavy.first {
+            culprits.append(String(format: "GPU-heavy app: %@ — %.0f ms/s of GPU time (measured). Sustained GPU work is energy-dense.", top.name, top.avgGpuMsPerSec))
+        } else if gpuPct > 40 {
+            // Per-process GPU isn't available without admin, so name the likely app by inference.
+            let suspect = highImpactProcesses.first?.name ?? topProcess?.name
+            if let s = suspect {
+                culprits.append(String(format: "GPU utilization %.0f%% — likely driven by %@ (enable Deep Power Mode for true per-app GPU watts)", gpuPct, s))
+            } else {
+                culprits.append(String(format: "Sustained GPU utilization %.0f%% — GPU-dense work is adding drain", gpuPct))
+            }
         }
 
         if ramPressure > 80 {

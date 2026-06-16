@@ -129,7 +129,9 @@ private struct MonitoringSettingsPane: View {
     @AppStorage("monitoring.retentionDays")          private var retentionDays = 30
     @AppStorage("monitoring.highDrainAlertEnabled")  private var alertEnabled = false
     @AppStorage("monitoring.highDrainAlertWatts")    private var alertWatts = 20.0
+    @AppStorage("deepPower.enabled")                 private var deepPowerEnabled = false
 
+    @ObservedObject private var deep = DeepPowerSampler.shared
     @State private var launchAtLogin = LoginItem.isEnabled
 
     var body: some View {
@@ -164,6 +166,39 @@ private struct MonitoringSettingsPane: View {
                     Text("Notifies when sustained drain exceeds this for more than 5 minutes.")
                         .font(.caption).foregroundColor(.secondary)
                 }
+            }
+
+            Section {
+                Toggle("Deep Power Mode", isOn: $deepPowerEnabled)
+                    .disabled(!deep.available)
+                    .onChange(of: deepPowerEnabled) { _, on in
+                        if on {
+                            Task {
+                                let ok = await deep.start()
+                                if !ok { deepPowerEnabled = false }
+                            }
+                        } else {
+                            deep.stop()
+                        }
+                    }
+                HStack {
+                    Text("Status").foregroundColor(.secondary)
+                    Spacer()
+                    if !deep.available {
+                        Text("powermetrics unavailable").font(.caption).foregroundColor(.secondary)
+                    } else if deep.isRunning {
+                        Label("Running", systemImage: "checkmark.circle.fill").foregroundColor(.green).font(.caption)
+                    } else if let e = deep.lastError {
+                        Text(e).font(.caption).foregroundColor(.orange).lineLimit(2)
+                    } else {
+                        Text("Off").font(.caption).foregroundColor(.secondary)
+                    }
+                }
+            } header: {
+                Text("Deep Power Mode (requires admin)")
+            } footer: {
+                Text("Runs Apple's powermetrics with one admin prompt per launch to measure true CPU/GPU/ANE wattage and per-process GPU time — the only way to see if an app (e.g. a browser) is hammering the GPU. Off by default; all other monitoring works without it.")
+                    .font(.caption).foregroundColor(.secondary)
             }
 
             Section("Startup") {

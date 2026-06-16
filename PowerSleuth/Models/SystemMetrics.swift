@@ -16,6 +16,8 @@ struct SystemMetrics: Codable, FetchableRecord, PersistableRecord, Identifiable,
     var systemWatts: Double     // BatteryData.SystemPower — actual measured watts
     var adapterWatts: Double    // BatteryData.AdapterPower
     var loadAvg1m: Double
+    var gpuUtilPct: Double = 0  // IOAccelerator "Device Utilization %"
+    var vramInUseMb: Double = 0 // IOAccelerator "In use system memory"
 
     static let databaseTableName = "system_metrics"
 

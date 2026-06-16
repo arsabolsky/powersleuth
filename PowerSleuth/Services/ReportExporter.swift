@@ -90,7 +90,9 @@ final class ReportExporter: Sendable {
             avgCpuPct: avg?.avgCpu ?? 0,
             avgRamPressurePct: avg?.avgRamPressure ?? 0,
             peakWatts: avg?.peakWatts ?? 0,
-            avgLoadAvg: 0
+            avgLoadAvg: 0,
+            avgGpuPct: avg?.avgGpu ?? 0,
+            avgVramInUseMb: avg?.avgVramMb ?? 0
         )
     }
 

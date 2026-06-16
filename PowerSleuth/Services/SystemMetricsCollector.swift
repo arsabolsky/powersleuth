@@ -28,6 +28,7 @@ final class SystemMetricsCollector: ObservableObject {
         let ram = Self.readRAM()
         let disk = readDiskDelta()
         let (systemWatts, adapterWatts) = Self.readSystemPower()
+        let gpu = Self.readGPU()
         let loadAvg = Self.readLoadAvg()
 
         var m = SystemMetrics(
@@ -44,7 +45,9 @@ final class SystemMetricsCollector: ObservableObject {
             diskWriteMbS: disk.writeMbS,
             systemWatts: systemWatts,
             adapterWatts: adapterWatts,
-            loadAvg1m: loadAvg
+            loadAvg1m: loadAvg,
+            gpuUtilPct: gpu.utilizationPct,
+            vramInUseMb: gpu.vramInUseMb
         )
         current = m
         try? DatabaseService.shared.saveSystemMetrics(&m)
@@ -171,6 +174,42 @@ final class SystemMetricsCollector: ObservableObject {
 
         return (bd["SystemPower"] as? Double ?? 0,
                 bd["AdapterPower"] as? Double ?? 0)
+    }
+
+    // MARK: - GPU utilization + VRAM (IOAccelerator PerformanceStatistics, no admin)
+
+    /// Reads system-wide GPU utilization % and VRAM in use from IOAccelerator. Sums across
+    /// accelerators (integrated + discrete) — utilization is taken as the max, VRAM summed.
+    static func readGPU() -> (utilizationPct: Double, vramInUseMb: Double) {
+        var iterator: io_iterator_t = 0
+        guard IOServiceGetMatchingServices(kIOMainPortDefault,
+                                           IOServiceMatching("IOAccelerator"),
+                                           &iterator) == KERN_SUCCESS else { return (0, 0) }
+        defer { IOObjectRelease(iterator) }
+
+        var maxUtil: Double = 0
+        var totalVramMb: Double = 0
+
+        var service = IOIteratorNext(iterator)
+        while service != IO_OBJECT_NULL {
+            defer {
+                IOObjectRelease(service)
+                service = IOIteratorNext(iterator)
+            }
+            var props: Unmanaged<CFMutableDictionary>?
+            guard IORegistryEntryCreateCFProperties(service, &props, kCFAllocatorDefault, 0) == kIOReturnSuccess,
+                  let dict = props?.takeRetainedValue() as NSDictionary?,
+                  let stats = dict["PerformanceStatistics"] as? NSDictionary else { continue }
+
+            if let util = (stats["Device Utilization %"] as? Double)
+                ?? (stats["GPU Activity(%)"] as? Double) {
+                maxUtil = max(maxUtil, util)
+            }
+            if let vramBytes = stats["In use system memory"] as? Double {
+                totalVramMb += vramBytes / 1_048_576.0
+            }
+        }
+        return (maxUtil, totalVramMb)
     }
 
     // MARK: - Load average

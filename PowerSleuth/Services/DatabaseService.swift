@@ -113,6 +113,34 @@ final class DatabaseService: Sendable {
             }
         }
 
+        migrator.registerMigration("v4") { db in
+            try db.alter(table: "system_metrics") { t in
+                t.add(column: "gpuUtilPct", .double).defaults(to: 0)
+                t.add(column: "vramInUseMb", .double).defaults(to: 0)
+            }
+        }
+
+        // Tier 2 (Deep Power Mode): separate tables so the powermetrics cadence never
+        // pollutes the always-on Tier 1 system_metrics averages.
+        migrator.registerMigration("v5") { db in
+            try db.create(table: "component_power_samples") { t in
+                t.autoIncrementedPrimaryKey("id")
+                t.column("timestamp", .datetime).notNull().indexed()
+                t.column("cpuWatts", .double)
+                t.column("gpuWatts", .double)
+                t.column("aneWatts", .double)
+            }
+            try db.create(table: "process_power_samples") { t in
+                t.autoIncrementedPrimaryKey("id")
+                t.column("timestamp", .datetime).notNull().indexed()
+                t.column("pid", .integer)
+                t.column("name", .text).indexed()
+                t.column("cpuMsPerSec", .double)
+                t.column("gpuMsPerSec", .double)
+                t.column("energyImpact", .double)
+            }
+        }
+
         try migrator.migrate(dbQueue)
     }
 
@@ -167,6 +195,57 @@ final class DatabaseService: Sendable {
     func saveNetworkSamples(_ samples: [NetworkSample]) throws {
         try dbQueue.write { db in
             for s in samples { try s.insert(db) }
+        }
+    }
+
+    // MARK: - Deep Power (Tier 2) Writes/Reads
+
+    func saveComponentPower(_ sample: inout ComponentPowerSample) throws {
+        try dbQueue.write { db in try sample.insert(db) }
+    }
+
+    func saveProcessPower(_ samples: [ProcessPowerSample]) throws {
+        try dbQueue.write { db in
+            for s in samples { try s.insert(db) }
+        }
+    }
+
+    func fetchLatestComponentPower() throws -> ComponentPowerSample? {
+        try dbQueue.read { db in
+            try ComponentPowerSample.order(Column("timestamp").desc).fetchOne(db)
+        }
+    }
+
+    /// True when Deep Power Mode has recorded any data in the window.
+    func hasProcessPower(since date: Date) throws -> Bool {
+        try dbQueue.read { db in
+            try ProcessPowerSample.filter(Column("timestamp") >= date).fetchCount(db) > 0
+        }
+    }
+
+    func fetchProcessPowerAggregations(since date: Date, limit: Int = 20) throws -> [ProcessPowerAggregation] {
+        try dbQueue.read { db in
+            let rows = try Row.fetchAll(db, sql: """
+                SELECT name,
+                       AVG(cpuMsPerSec) as avgCpu,
+                       AVG(gpuMsPerSec) as avgGpu,
+                       AVG(energyImpact) as avgEnergy,
+                       COUNT(*) as cnt
+                FROM process_power_samples
+                WHERE timestamp >= ?
+                GROUP BY name
+                ORDER BY avgGpu DESC, avgEnergy DESC
+                LIMIT ?
+                """, arguments: [date, limit])
+            return rows.map { row in
+                ProcessPowerAggregation(
+                    name: row["name"] ?? "Unknown",
+                    avgCpuMsPerSec: row["avgCpu"] ?? 0,
+                    avgGpuMsPerSec: row["avgGpu"] ?? 0,
+                    avgEnergyImpact: row["avgEnergy"] ?? 0,
+                    sampleCount: row["cnt"] ?? 0
+                )
+            }
         }
     }
 
@@ -285,15 +364,15 @@ final class DatabaseService: Sendable {
         }
     }
 
-    func fetchAverageSystemMetrics(since date: Date) throws -> (avgWatts: Double, avgCpu: Double, avgRamPressure: Double, peakWatts: Double)? {
+    func fetchAverageSystemMetrics(since date: Date) throws -> (avgWatts: Double, avgCpu: Double, avgRamPressure: Double, peakWatts: Double, avgGpu: Double, avgVramMb: Double)? {
         try dbQueue.read { db in
             guard let row = try Row.fetchOne(db, sql: """
                 SELECT AVG(systemWatts), AVG(cpuUserPct+cpuSysPct),
                        AVG(CAST(ramActiveMb+ramWiredMb AS REAL)/(ramFreeMb+ramActiveMb+ramCompressedMb+ramWiredMb)*100),
-                       MAX(systemWatts)
+                       MAX(systemWatts), AVG(gpuUtilPct), AVG(vramInUseMb)
                 FROM system_metrics WHERE timestamp >= ? AND systemWatts > 0
                 """, arguments: [date]) else { return nil }
-            return (row[0] ?? 0, row[1] ?? 0, row[2] ?? 0, row[3] ?? 0)
+            return (row[0] ?? 0, row[1] ?? 0, row[2] ?? 0, row[3] ?? 0, row[4] ?? 0, row[5] ?? 0)
         }
     }
 
@@ -338,7 +417,8 @@ final class DatabaseService: Sendable {
         try dbQueue.write { db in
             // Most tables key off `timestamp`; drain_sessions keys off `startTimestamp`.
             for table in ["battery_snapshots", "power_assertions",
-                          "battery_health", "process_samples", "system_metrics", "network_samples"] {
+                          "battery_health", "process_samples", "system_metrics", "network_samples",
+                          "component_power_samples", "process_power_samples"] {
                 try db.execute(sql: "DELETE FROM \(table) WHERE timestamp < ?", arguments: [cutoff])
             }
             try db.execute(sql: "DELETE FROM drain_sessions WHERE startTimestamp < ?", arguments: [cutoff])

@@ -21,10 +21,13 @@ final class NarrativeEngine: ObservableObject {
 
     @Published var summary: AIResult?
     @Published var findings: AIResult?
+    @Published var comparison: AIResult?
     @Published var isGeneratingSummary = false
     @Published var isGeneratingFindings = false
+    @Published var isGeneratingComparison = false
     @Published var summaryError: String?
     @Published var findingsError: String?
+    @Published var comparisonError: String?
 
     var appleIntelligenceAvailable: Bool {
         #if canImport(FoundationModels)
@@ -129,6 +132,42 @@ final class NarrativeEngine: ObservableObject {
         #endif
     }
 
+    // MARK: - Comparison  (cross-Mac diff narrative; Ollama preferred)
+
+    func generateComparison(_ comp: ProfileComparison) async {
+        isGeneratingComparison = true
+        comparisonError = nil
+        defer { isGeneratingComparison = false }
+
+        let prompt = comparisonPrompt(comp)
+        let sysCtx = "You are a macOS battery expert comparing two Macs. Explain concretely why one drains faster, citing the specific metrics and apps that differ. End with the single highest-impact fix."
+
+        let model = UserDefaults.standard.string(forKey: "ai.ollamaModel") ?? ""
+        if UserDefaults.standard.bool(forKey: "ai.useOllama"),
+           OllamaService.shared.isDetected, !model.isEmpty {
+            do {
+                let text = try await OllamaService.shared.generate(model: model, prompt: sysCtx + "\n\n" + prompt)
+                comparison = AIResult(text: text, provider: .ollama, modelName: model)
+                return
+            } catch {
+                comparisonError = error.localizedDescription
+            }
+        }
+
+        #if canImport(FoundationModels)
+        if #available(macOS 26.0, *),
+           UserDefaults.standard.bool(forKey: "ai.useAppleIntelligence"),
+           appleIntelligenceAvailable {
+            do {
+                let text = try await appleGenerate(prompt: prompt, instructions: sysCtx)
+                comparison = AIResult(text: text, provider: .appleIntelligence, modelName: nil)
+            } catch {
+                comparisonError = error.localizedDescription
+            }
+        }
+        #endif
+    }
+
     // MARK: - Apple Intelligence
 
     #if canImport(FoundationModels)
@@ -158,6 +197,26 @@ final class NarrativeEngine: ObservableObject {
         ] + contextLines(diagnosis: diagnosis, metrics: metrics, processes: processes)).joined(separator: "\n")
     }
 
+    private func comparisonPrompt(_ c: ProfileComparison) -> String {
+        var lines: [String] = [
+            "Compare two Macs (A=\(c.labelA), B=\(c.labelB)) and explain why one drains faster.",
+            "Metrics (A vs B):"
+        ]
+        for m in c.metrics {
+            lines.append("  \(m.label): \(String(format: "%.1f", m.valueA))\(m.unit) vs \(String(format: "%.1f", m.valueB))\(m.unit)")
+        }
+        let notable = c.consumers.prefix(12).map { d -> String in
+            let a = d.presentA ? String(format: "%.0f", d.energyA) : "absent"
+            let b = d.presentB ? String(format: "%.0f", d.energyB) : "absent"
+            return "  \(d.name): A=\(a) B=\(b)"
+        }
+        if !notable.isEmpty { lines.append("Per-app energy impact (A vs B):"); lines.append(contentsOf: notable) }
+        if !c.assertionsOnlyA.isEmpty { lines.append("Sleep-preventers only on A: \(c.assertionsOnlyA.joined(separator: ", "))") }
+        if !c.assertionsOnlyB.isEmpty { lines.append("Sleep-preventers only on B: \(c.assertionsOnlyB.joined(separator: ", "))") }
+        lines.append("\nWrite 3-5 sentences: which Mac is worse and the concrete reasons (name the apps/metrics), then the top fix.")
+        return lines.joined(separator: "\n")
+    }
+
     private func contextLines(diagnosis: DrainDiagnosis, metrics: SystemMetrics?, processes: [ProcessAggregation]) -> [String] {
         var lines: [String] = []
         lines.append("Current drain: \(String(format: "%.1f", diagnosis.currentWatts))W (\(diagnosis.level.label))")
@@ -182,6 +241,9 @@ final class NarrativeEngine: ObservableObject {
             }
             if m.systemWatts > 0 {
                 lines.append("Measured watts: \(String(format: "%.1f", m.systemWatts))W")
+            }
+            if m.gpuUtilPct > 0 {
+                lines.append("GPU utilization: \(Int(m.gpuUtilPct))% | VRAM in use: \(Int(m.vramInUseMb))MB")
             }
         }
         if !diagnosis.topAssertors.isEmpty {

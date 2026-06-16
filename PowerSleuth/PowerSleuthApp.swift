@@ -63,8 +63,19 @@ final class AppCoordinator {
             "ai.useAppleIntelligence": true,
             "ai.useOllama": true,
             "monitoring.sampleInterval": 30,
-            "monitoring.retentionDays": 30
+            "monitoring.retentionDays": 30,
+            "deepPower.enabled": false
         ])
+
+        // Resume Deep Power Mode if the user left it on (re-prompts for admin once).
+        if UserDefaults.standard.bool(forKey: "deepPower.enabled") {
+            Task { await DeepPowerSampler.shared.start() }
+        }
+        // Make sure the privileged powermetrics process is stopped when we quit.
+        NotificationCenter.default.addObserver(forName: NSApplication.willTerminateNotification,
+                                               object: nil, queue: .main) { _ in
+            MainActor.assumeIsolated { DeepPowerSampler.shared.stop() }
+        }
 
         pruneNow()
         sampleHealthIfNeeded()

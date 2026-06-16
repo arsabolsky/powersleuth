@@ -33,6 +33,9 @@ struct DeviceProfile: Codable, Sendable {
         let avgRamPressurePct: Double
         let peakWatts: Double
         let avgLoadAvg: Double
+        // Optional so profiles exported before GPU support still decode.
+        var avgGpuPct: Double? = nil
+        var avgVramInUseMb: Double? = nil
     }
 
     struct ConsumerSummary: Codable, Sendable {
@@ -84,6 +87,8 @@ struct DeviceProfile: Codable, Sendable {
         | Avg CPU | \(String(format: "%.1f", averageMetrics.avgCpuPct))% |
         | Avg RAM Pressure | \(String(format: "%.1f", averageMetrics.avgRamPressurePct))% |
         | Peak Power Draw | \(String(format: "%.1f", averageMetrics.peakWatts)) W |
+        | Avg GPU | \(averageMetrics.avgGpuPct.map { String(format: "%.1f%%", $0) } ?? "—") |
+        | Avg VRAM In Use | \(averageMetrics.avgVramInUseMb.map { String(format: "%.0f MB", $0) } ?? "—") |
 
         ## Top Energy Consumers
         | Process | Energy Impact | CPU% | Memory |
