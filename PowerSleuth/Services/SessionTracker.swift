@@ -1,6 +1,9 @@
 import Foundation
 import AppKit
 
+/// Tracks sleep/awake sessions from NSWorkspace notifications, which are delivered
+/// on the main thread — so this type is MainActor-isolated.
+@MainActor
 final class SessionTracker {
     static let shared = SessionTracker()
 

@@ -48,6 +48,7 @@ struct PowerSleuthApp: App {
 
 // MARK: - AppCoordinator
 
+@MainActor
 final class AppCoordinator {
     private var healthTimer: Timer?
 
@@ -68,7 +69,7 @@ final class AppCoordinator {
         try? DatabaseService.shared.pruneOldData(retentionDays: retentionDays > 0 ? retentionDays : 30)
         sampleHealthIfNeeded()
         healthTimer = Timer.scheduledTimer(withTimeInterval: 86400, repeats: true) { [weak self] _ in
-            self?.sampleHealthIfNeeded()
+            Task { @MainActor in self?.sampleHealthIfNeeded() }
         }
         _ = SessionTracker.shared
     }

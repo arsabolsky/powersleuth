@@ -1,6 +1,7 @@
 import Foundation
 import Combine
 
+@MainActor
 final class AssertionMonitor: ObservableObject {
     @Published var activeAssertions: [PowerAssertion] = []
 
@@ -10,26 +11,31 @@ final class AssertionMonitor: ObservableObject {
         startMonitoring()
     }
 
-    deinit {
-        timer?.invalidate()
-    }
-
     private func startMonitoring() {
         timer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
-            self?.sample()
+            Task { @MainActor in self?.sample() }
         }
         sample()
     }
 
     func sample() {
-        let assertions = Self.fetchAssertions()
-        DispatchQueue.main.async {
+        Task {
+            let assertions = await Self.fetchAssertionsAsync()
             self.activeAssertions = assertions
+            try? DatabaseService.shared.saveAssertions(assertions)
         }
-        try? DatabaseService.shared.saveAssertions(assertions)
     }
 
-    static func fetchAssertions() -> [PowerAssertion] {
+    /// Runs the (blocking) pmset subprocess off the main thread, then returns to the caller.
+    nonisolated static func fetchAssertionsAsync() async -> [PowerAssertion] {
+        await withCheckedContinuation { continuation in
+            DispatchQueue.global(qos: .utility).async {
+                continuation.resume(returning: fetchAssertions())
+            }
+        }
+    }
+
+    nonisolated static func fetchAssertions() -> [PowerAssertion] {
         let process = Process()
         process.launchPath = "/usr/bin/pmset"
         process.arguments = ["-g", "assertions"]
@@ -53,7 +59,7 @@ final class AssertionMonitor: ObservableObject {
 
     // Parses lines like:
     //   pid 1234(loginwindow): [0x0001234500000001] 00:01:31 PreventUserIdleSystemSleep named: "UserIsActive"
-    static func parse(pmsetOutput: String) -> [PowerAssertion] {
+    nonisolated static func parse(pmsetOutput: String) -> [PowerAssertion] {
         let pattern = #"pid\s+(\d+)\(([^)]+)\).*?(Prevent\w+|BackgroundTask|NoIdleSleepAssertion)\s+named:\s+"([^"]+)""#
         guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else { return [] }
 

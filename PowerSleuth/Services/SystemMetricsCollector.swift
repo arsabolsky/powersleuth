@@ -13,7 +13,6 @@ final class SystemMetricsCollector: ObservableObject {
     private var hasDiskBaseline = false
 
     init() { start() }
-    deinit { timer?.invalidate() }
 
     private func start() {
         timer = Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { [weak self] _ in
@@ -90,7 +89,9 @@ final class SystemMetricsCollector: ObservableObject {
         }
         guard result == KERN_SUCCESS else { return (0, 0, 0, 0) }
 
-        let pageKB = Int(vm_kernel_page_size) / 1024
+        // getpagesize() is a function (concurrency-safe); vm_kernel_page_size is a
+        // mutable global that Swift 6 rejects as shared mutable state.
+        let pageKB = Int(getpagesize()) / 1024
         return (
             free:       Int(vmstat.free_count)        * pageKB / 1024,
             active:     Int(vmstat.active_count)      * pageKB / 1024,

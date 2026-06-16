@@ -10,7 +10,6 @@ final class NetworkSampler: ObservableObject {
     private var prevBytesOut: [String: Int64] = [:]
 
     init() { start() }
-    deinit { timer?.invalidate() }
 
     private func start() {
         timer = Timer.scheduledTimer(withTimeInterval: 300, repeats: true) { [weak self] _ in

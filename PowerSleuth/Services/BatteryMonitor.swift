@@ -3,6 +3,7 @@ import IOKit.ps
 import IOKit
 import Combine
 
+@MainActor
 final class BatteryMonitor: ObservableObject {
     @Published var currentSnapshot: BatterySnapshot?
 
@@ -13,15 +14,14 @@ final class BatteryMonitor: ObservableObject {
         startMonitoring()
     }
 
-    deinit {
-        stopMonitoring()
-    }
-
     private func startMonitoring() {
         let context = UnsafeMutableRawPointer(Unmanaged.passUnretained(self).toOpaque())
+        // The run loop source is attached to the main run loop, so the callback fires
+        // on the main thread — assumeIsolated lets us hop back into MainActor safely.
         let src = IOPSNotificationCreateRunLoopSource({ ctx in
             guard let ctx else { return }
-            Unmanaged<BatteryMonitor>.fromOpaque(ctx).takeUnretainedValue().sample()
+            let monitor = Unmanaged<BatteryMonitor>.fromOpaque(ctx).takeUnretainedValue()
+            MainActor.assumeIsolated { monitor.sample() }
         }, context)
         runLoopSource = src?.takeRetainedValue()
 
@@ -31,28 +31,21 @@ final class BatteryMonitor: ObservableObject {
 
         // Fallback: poll every 30 seconds in case notifications miss an update
         timer = Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { [weak self] _ in
-            self?.sample()
+            Task { @MainActor in self?.sample() }
         }
         sample()
     }
 
-    private func stopMonitoring() {
-        timer?.invalidate()
-        if let src = runLoopSource {
-            CFRunLoopRemoveSource(CFRunLoopGetMain(), src, .defaultMode)
-        }
-    }
-
     func sample() {
         guard let snapshot = Self.readSnapshot() else { return }
-        DispatchQueue.main.async { self.currentSnapshot = snapshot }
+        currentSnapshot = snapshot
         var s = snapshot
         try? DatabaseService.shared.saveSnapshot(&s)
     }
 
     // MARK: - IOPowerSources + IORegistry
 
-    static func readSnapshot() -> BatterySnapshot? {
+    nonisolated static func readSnapshot() -> BatterySnapshot? {
         guard let blob = IOPSCopyPowerSourcesInfo()?.takeRetainedValue(),
               let rawList = IOPSCopyPowerSourcesList(blob)?.takeRetainedValue()
         else { return nil }
@@ -99,7 +92,7 @@ final class BatteryMonitor: ObservableObject {
 
     // MARK: - IORegistry (AppleSmartBattery)
 
-    static func readSmartBatteryDict() -> [String: Any]? {
+    nonisolated static func readSmartBatteryDict() -> [String: Any]? {
         let service = IOServiceGetMatchingService(
             kIOMainPortDefault,
             IOServiceMatching("AppleSmartBattery")
@@ -116,7 +109,7 @@ final class BatteryMonitor: ObservableObject {
 
     // Returns cycle count and raw mAh capacities for health tracking.
     // Uses AppleRawMaxCapacity (mAh) not MaxCapacity (which is % on modern Macs).
-    static func readHealthInfo() -> (cycleCount: Int, designMah: Int, maxMah: Int)? {
+    nonisolated static func readHealthInfo() -> (cycleCount: Int, designMah: Int, maxMah: Int)? {
         guard let dict = readSmartBatteryDict() else { return nil }
         let cycles = dict["CycleCount"] as? Int ?? 0
         let design = dict["DesignCapacity"] as? Int ?? 0

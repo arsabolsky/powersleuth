@@ -9,7 +9,6 @@ final class ProcessSampler: ObservableObject {
     private var timer: Timer?
 
     init() { start() }
-    deinit { timer?.invalidate() }
 
     private func start() {
         timer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in

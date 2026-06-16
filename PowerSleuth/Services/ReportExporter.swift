@@ -44,9 +44,11 @@ final class ReportExporter: Sendable {
         func sysctl(_ key: String) -> String {
             var size = 0
             sysctlbyname(key, nil, &size, nil, 0)
-            var value = [CChar](repeating: 0, count: size)
+            guard size > 0 else { return "" }
+            var value = [UInt8](repeating: 0, count: size)
             sysctlbyname(key, &value, &size, nil, 0)
-            return String(cString: value)
+            // Drop the trailing NUL before decoding.
+            return String(decoding: value.prefix(max(0, size - 1)), as: UTF8.self)
         }
         return DeviceProfile.DeviceInfo(
             model: sysctl("hw.model"),
