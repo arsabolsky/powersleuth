@@ -7,15 +7,16 @@ import XCTest
 final class TopParserTests: XCTestCase {
 
     // Mirrors real `top -l 2` output: two blocks, second is authoritative.
+    // Columns: PID COMMAND %CPU MEM POWER IDLEW STATE
     private let sample = """
     Processes: 600 total, 3 running
-    PID    COMMAND          %CPU MEM    POWER STATE
-    1      stale            0.0  10M    0.0   sleeping
+    PID    COMMAND          %CPU MEM    POWER IDLEW STATE
+    1      stale            0.0  10M    0.0   5     sleeping
 
-    PID    COMMAND          %CPU MEM    POWER STATE
-    78695  WindowServer     51.3 1296M- 52.0  sleeping
-    39922  Google Chrome He 20.5 589M-  20.5  sleeping
-    16949  Claude Helper (R 8.4  632M+  8.4   sleeping
+    PID    COMMAND          %CPU MEM    POWER IDLEW STATE
+    78695  WindowServer     51.3 1296M- 52.0  100   sleeping
+    39922  Google Chrome He 20.5 589M-  20.5  50    sleeping
+    16949  Claude Helper (R 8.4  632M+  8.4   30    sleeping
     """
 
     func testParsesSecondBlockOnly() {
