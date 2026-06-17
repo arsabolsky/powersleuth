@@ -33,3 +33,6 @@ Icon?
 
 # Logs
 *.log
+
+# Local no-Xcode app build
+.build-app/

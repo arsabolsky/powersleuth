@@ -38,21 +38,34 @@ Other battery apps (coconutBattery, Stats, AlDente) show you the *current state*
 
 ## Requirements
 
-- macOS 13.0 (Ventura) or later
-- Xcode 15+
+- macOS 15.0 (Sequoia) or later
+- The Command Line Tools (`xcode-select --install`) — full Xcode is **not** required
 
 ## Installation
 
-### Build from source
+### Build without Xcode (recommended)
+
+Only the Command Line Tools are needed — no Xcode, no admin. This compiles with
+Swift Package Manager and assembles the signed `.app`:
 
 ```bash
 git clone https://github.com/arsabolsky/powersleuth.git
 cd powersleuth
-make setup     # installs xcodegen (via Homebrew)
-make install   # builds Release and copies to /Applications
+./scripts/build.sh --install      # build + copy to /Applications  (or: make app-install)
 ```
 
-Then launch **PowerSleuth** from Spotlight or `/Applications`.
+- `./scripts/build.sh` — build only → `.build-app/PowerSleuth.app`
+- `UNIVERSAL=1 ./scripts/build.sh` — build a universal (Apple Silicon + Intel) binary
+
+The first build downloads the GRDB dependency, so it needs internet once. Then launch
+**PowerSleuth** from `/Applications` (it lives in the menu bar — there's no Dock icon).
+
+### Build with Xcode (optional)
+
+```bash
+make setup     # installs xcodegen (via Homebrew)
+make install   # generates the Xcode project, builds Release, copies to /Applications
+```
 
 ### Open in Xcode
 

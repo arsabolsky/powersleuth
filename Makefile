@@ -1,9 +1,17 @@
-.PHONY: setup generate build install uninstall clean test open lint
+.PHONY: setup generate build install uninstall clean test open lint app app-install
 
 SCHEME     = PowerSleuth
 BUILD_DIR  = .build
 APP_NAME   = PowerSleuth.app
 APP_DEST   = /Applications/$(APP_NAME)
+
+# Build the .app WITHOUT Xcode — Command Line Tools only (Swift Package Manager).
+# This is the easiest way to build on a Mac that doesn't have Xcode installed.
+app:
+	./scripts/build.sh
+
+app-install:
+	./scripts/build.sh --install
 
 setup:
 	@echo "Installing dependencies..."
