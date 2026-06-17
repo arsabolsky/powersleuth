@@ -21,6 +21,7 @@ struct SystemMetrics: Codable, FetchableRecord, PersistableRecord, Identifiable,
     var cpuWatts: Double = 0    // IOReport Energy Model (no admin)
     var gpuWatts: Double = 0
     var aneWatts: Double = 0
+    var displayWatts: Double = 0 // IOReport DISP + DISPEXT
 
     static let databaseTableName = "system_metrics"
 

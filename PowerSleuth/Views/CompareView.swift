@@ -23,6 +23,7 @@ struct CompareView: View {
                     metricsCard(cmp)
                     consumersCard(cmp)
                     assertionsCard(cmp)
+                    servicesCard(cmp)
                     aiCard(cmp)
                 } else {
                     emptyState
@@ -161,6 +162,19 @@ struct CompareView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title).font(.caption2).foregroundColor(.secondary)
                     Text(items.joined(separator: ", ")).font(.caption).foregroundColor(color)
+                }
+            }
+        }
+    }
+
+    private func servicesCard(_ c: ProfileComparison) -> some View {
+        CardView(title: "Background Services") {
+            VStack(alignment: .leading, spacing: 6) {
+                assertionRow("Only on \(c.labelA)", c.servicesOnlyA, .orange)
+                assertionRow("Only on \(c.labelB)", c.servicesOnlyB, .orange)
+                if c.servicesOnlyA.isEmpty && c.servicesOnlyB.isEmpty {
+                    Text("Same third-party background services on both (or none recorded).")
+                        .font(.caption).foregroundColor(.secondary)
                 }
             }
         }

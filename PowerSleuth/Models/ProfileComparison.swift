@@ -9,6 +9,8 @@ struct ProfileComparison: Sendable {
     let assertionsOnlyA: [String]
     let assertionsOnlyB: [String]
     let assertionsBoth: [String]
+    let servicesOnlyA: [String]   // background services present only on A
+    let servicesOnlyB: [String]
 
     struct MetricDelta: Identifiable, Sendable {
         let id = UUID()
@@ -83,6 +85,9 @@ struct ProfileComparison: Sendable {
         let holdersA = Set(a.powerAssertionHolders.map(holderName))
         let holdersB = Set(b.powerAssertionHolders.map(holderName))
 
+        let servicesA = Set(a.backgroundServices ?? [])
+        let servicesB = Set(b.backgroundServices ?? [])
+
         return ProfileComparison(
             labelA: label(for: a),
             labelB: label(for: b),
@@ -90,7 +95,9 @@ struct ProfileComparison: Sendable {
             consumers: consumers,
             assertionsOnlyA: holdersA.subtracting(holdersB).sorted(),
             assertionsOnlyB: holdersB.subtracting(holdersA).sorted(),
-            assertionsBoth: holdersA.intersection(holdersB).sorted()
+            assertionsBoth: holdersA.intersection(holdersB).sorted(),
+            servicesOnlyA: servicesA.subtracting(servicesB).sorted(),
+            servicesOnlyB: servicesB.subtracting(servicesA).sorted()
         )
     }
 

@@ -10,6 +10,7 @@ struct DeviceProfile: Codable, Sendable {
     let powerAssertionHolders: [String]
     let observations: [String]
     let dataWindowDays: Int
+    var backgroundServices: [String]? = nil   // optional → old exported JSON still decodes
 
     struct DeviceInfo: Codable, Sendable {
         let model: String

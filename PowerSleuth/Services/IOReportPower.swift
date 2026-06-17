@@ -59,9 +59,9 @@ final class IOReportPower {
         self.subbedChannels = subbed
     }
 
-    /// Returns average CPU/GPU/ANE watts since the previous call (nil on the first call,
-    /// while it establishes a baseline).
-    func sample() -> (cpuW: Double, gpuW: Double, aneW: Double)? {
+    /// Returns average CPU/GPU/ANE/display watts since the previous call (nil on the first
+    /// call, while it establishes a baseline). Display = DISP + DISPEXT channels.
+    func sample() -> (cpuW: Double, gpuW: Double, aneW: Double, displayW: Double)? {
         guard let cur = createSamples(subscription, subbedChannels, nil)?.takeRetainedValue() else { return nil }
         defer { prevSample = cur; prevTime = Date() }
         guard let prev = prevSample else { return nil }
@@ -71,23 +71,25 @@ final class IOReportPower {
         guard let delta = createDelta(prev, cur, nil)?.takeRetainedValue() else { return nil }
 
         guard let channels = (delta as NSDictionary)["IOReportChannels"] as? [NSDictionary] else { return nil }
-        var cpuJ = 0.0, gpuJ = 0.0, aneJ = 0.0
+        var cpuJ = 0.0, gpuJ = 0.0, aneJ = 0.0, dispJ = 0.0
         for ch in channels {
             guard let legend = ch["LegendChannel"] as? [Any], legend.count >= 3,
                   let name = legend[2] as? String else { continue }
-            guard name == "CPU Energy" || name == "GPU" || name == "ANE" else { continue }
+            guard name == "CPU Energy" || name == "GPU" || name == "ANE"
+                    || name == "DISP" || name == "DISPEXT" else { continue }
 
             let raw = getInteger(ch as CFDictionary, 0)
             let unit = getUnit?(ch as CFDictionary)?.takeUnretainedValue() as String?
             let joules = Double(raw) * Self.joulesPerUnit(unit)
             switch name {
-            case "CPU Energy": cpuJ += joules
-            case "GPU":        gpuJ += joules
-            case "ANE":        aneJ += joules
+            case "CPU Energy":     cpuJ += joules
+            case "GPU":            gpuJ += joules
+            case "ANE":            aneJ += joules
+            case "DISP", "DISPEXT": dispJ += joules
             default: break
             }
         }
-        return (cpuJ / elapsed, gpuJ / elapsed, aneJ / elapsed)
+        return (cpuJ / elapsed, gpuJ / elapsed, aneJ / elapsed, dispJ / elapsed)
     }
 
     private static func joulesPerUnit(_ unit: String?) -> Double {

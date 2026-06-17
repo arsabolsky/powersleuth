@@ -52,7 +52,8 @@ final class SystemMetricsCollector: ObservableObject {
             vramInUseMb: gpu.vramInUseMb,
             cpuWatts: power?.cpuW ?? 0,
             gpuWatts: power?.gpuW ?? 0,
-            aneWatts: power?.aneW ?? 0
+            aneWatts: power?.aneW ?? 0,
+            displayWatts: power?.displayW ?? 0
         )
         current = m
         try? DatabaseService.shared.saveSystemMetrics(&m)

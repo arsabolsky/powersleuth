@@ -52,6 +52,7 @@ struct PowerSleuthApp: App {
 final class AppCoordinator {
     private var dailyTimer: Timer?
     private var alertTimer: Timer?
+    private let wakeMonitor = WakeMonitor()   // parses pmset -g log for dark wakes
 
     init() {
         // Register default values so @AppStorage (SettingsView) and raw UserDefaults

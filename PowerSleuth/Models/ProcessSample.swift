@@ -10,6 +10,7 @@ struct ProcessSample: Codable, FetchableRecord, PersistableRecord, Identifiable,
     var memMb: Double
     var energyImpact: Double   // Activity Monitor "Energy Impact" score
     var state: String          // running / sleeping / stuck / etc.
+    var idleWakeups: Double = 0 // idle wake-ups in the sample interval (top "idlew")
 
     static let databaseTableName = "process_samples"
 }
@@ -29,6 +30,7 @@ struct ProcessAggregation: Identifiable, Sendable {
     let avgCpuPct: Double
     let avgMemMb: Double
     let sampleCount: Int
+    var avgIdleWakeups: Double = 0
 
     var impactLevel: ImpactLevel {
         switch avgEnergyImpact {

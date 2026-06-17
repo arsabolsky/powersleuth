@@ -108,6 +108,18 @@ final class AnalysisEngine: Sendable {
             }
         }
 
+        // Dark wakes — what's waking the Mac during sleep (overnight drain).
+        if let wake = try? db.fetchWakeSummary(since: Date().addingTimeInterval(-86400)), wake.darkWakes >= 10 {
+            let top = wake.byReason.prefix(2).map { "\($0.reason) (\($0.count))" }.joined(separator: ", ")
+            culprits.append("Woke \(wake.darkWakes)× from sleep in 24h — mostly: \(top). Frequent dark wakes drain battery overnight.")
+        }
+
+        // A process waking the CPU constantly while idle (poor battery even at low CPU%).
+        if let noisy = processAggs.filter({ $0.avgCpuPct < 10 }).max(by: { $0.avgIdleWakeups < $1.avgIdleWakeups }),
+           noisy.avgIdleWakeups > 50 {
+            culprits.append(String(format: "%@ wakes the CPU ~%.0f×/sec while nearly idle — background chatter that hurts battery.", noisy.name, noisy.avgIdleWakeups))
+        }
+
         if thermallyStressed {
             let labels = ["Nominal", "Fair", "Serious", "Critical"]
             let label = thermalRaw < labels.count ? labels[thermalRaw] : "Unknown"

@@ -7,6 +7,10 @@ final class ProcessSampler: ObservableObject {
     @Published var topConsumers: [ProcessAggregation] = []
 
     private var timer: Timer?
+    // top reports idle wakeups as a cumulative lifetime counter; we delta it per pid to a
+    // per-second rate ("busy while idle" signal).
+    private var prevIdlew: [Int: Double] = [:]
+    private var prevIdlewTime = Date()
 
     init() { start() }
 
@@ -18,8 +22,26 @@ final class ProcessSampler: ObservableObject {
     }
 
     func sample() async {
-        let samples = await Self.runTopSample()
+        var samples = await Self.runTopSample()
         guard !samples.isEmpty else { return }
+
+        // Convert cumulative idle wakeups → wakeups/sec since the last sample.
+        let now = Date()
+        let elapsed = max(1, now.timeIntervalSince(prevIdlewTime))
+        var newPrev: [Int: Double] = [:]
+        for i in samples.indices {
+            let pid = samples[i].pid
+            let cumulative = samples[i].idleWakeups
+            newPrev[pid] = cumulative
+            if let prev = prevIdlew[pid], cumulative >= prev {
+                samples[i].idleWakeups = (cumulative - prev) / elapsed
+            } else {
+                samples[i].idleWakeups = 0   // first sighting or process restarted
+            }
+        }
+        prevIdlew = newPrev
+        prevIdlewTime = now
+
         try? DatabaseService.shared.saveProcessSamples(samples)
 
         let aggs = (try? DatabaseService.shared.fetchProcessAggregations(
@@ -35,7 +57,7 @@ final class ProcessSampler: ObservableObject {
         await withCheckedContinuation { continuation in
             DispatchQueue.global(qos: .utility).async {
                 let output = shell("/usr/bin/top", ["-l", "2", "-s", "1",
-                    "-stats", "pid,command,cpu,mem,power,state",
+                    "-stats", "pid,command,cpu,mem,power,idlew,state",
                     "-o", "power", "-n", "30"])
                 let samples = parseTopOutput(output)
                 continuation.resume(returning: samples)
@@ -55,22 +77,24 @@ final class ProcessSampler: ObservableObject {
         for line in allLines[(headerIdx + 1)...] {
             // The COMMAND column may contain spaces ("Google Chrome He", "Claude Helper (R"),
             // so parse the fixed trailing columns from the END:
-            //   PID  <command with spaces>  %CPU  MEM  POWER  STATE
+            //   PID  <command with spaces>  %CPU  MEM  POWER  IDLEW  STATE
             let parts = line.split(separator: " ", omittingEmptySubsequences: true)
-            guard parts.count >= 6, let pid = Int(parts[0]) else { continue }
+            guard parts.count >= 7, let pid = Int(parts[0]) else { continue }
 
             let state   = String(parts[parts.count - 1])
-            let powerStr = String(parts[parts.count - 2])
-            let memStr   = String(parts[parts.count - 3])
-            let cpuStr   = String(parts[parts.count - 4]).replacingOccurrences(of: "%", with: "")
-            let name     = parts[1..<(parts.count - 4)].joined(separator: " ")
+            let idlewStr = String(parts[parts.count - 2])
+            let powerStr = String(parts[parts.count - 3])
+            let memStr   = String(parts[parts.count - 4])
+            let cpuStr   = String(parts[parts.count - 5]).replacingOccurrences(of: "%", with: "")
+            let name     = parts[1..<(parts.count - 5)].joined(separator: " ")
 
             guard let cpu = Double(cpuStr), !name.isEmpty else { continue }
 
             results.append(ProcessSample(
                 id: nil, timestamp: now, pid: pid, name: name,
                 cpuPct: cpu, memMb: parseMem(memStr),
-                energyImpact: Double(powerStr) ?? 0, state: state
+                energyImpact: Double(powerStr) ?? 0, state: state,
+                idleWakeups: Double(idlewStr) ?? 0
             ))
         }
 
@@ -100,7 +124,10 @@ func shell(_ path: String, _ args: [String]) -> String {
     let pipe = Pipe()
     process.standardOutput = pipe
     process.standardError = Pipe()
-    try? process.run()
+    do { try process.run() } catch { return "" }
+    // Drain the pipe BEFORE waiting: large output (e.g. `pmset -g log`, several MB) overflows
+    // the 64 KB pipe buffer and deadlocks if we waitUntilExit() first.
+    let data = pipe.fileHandleForReading.readDataToEndOfFile()
     process.waitUntilExit()
-    return String(data: pipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
+    return String(data: data, encoding: .utf8) ?? ""
 }

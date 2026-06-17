@@ -153,6 +153,21 @@ final class DatabaseService: Sendable {
             try db.drop(table: "component_power_samples")
         }
 
+        migrator.registerMigration("v7") { db in
+            try db.alter(table: "system_metrics") { t in
+                t.add(column: "displayWatts", .double).defaults(to: 0)
+            }
+            try db.alter(table: "process_samples") { t in
+                t.add(column: "idleWakeups", .double).defaults(to: 0)
+            }
+            try db.create(table: "wake_events") { t in
+                t.autoIncrementedPrimaryKey("id")
+                t.column("timestamp", .datetime).notNull().indexed()
+                t.column("type", .text)
+                t.column("reason", .text)
+            }
+        }
+
         try migrator.migrate(dbQueue)
     }
 
@@ -207,6 +222,32 @@ final class DatabaseService: Sendable {
     func saveNetworkSamples(_ samples: [NetworkSample]) throws {
         try dbQueue.write { db in
             for s in samples { try s.insert(db) }
+        }
+    }
+
+    // MARK: - Wake events (pmset -g log)
+
+    /// Inserts only wake events newer than the most recent stored one (pmset log is re-parsed
+    /// periodically, so this avoids duplicates).
+    func saveWakeEvents(_ events: [WakeEvent]) throws {
+        try dbQueue.write { db in
+            // ORM fetch is NULL-safe (MAX(timestamp) on an empty table is NULL and would
+            // throw when decoded as a non-optional Date).
+            let latest = try WakeEvent.order(Column("timestamp").desc).fetchOne(db)?.timestamp
+            for var e in events where latest == nil || e.timestamp > latest! {
+                try e.insert(db)
+            }
+        }
+    }
+
+    func fetchWakeSummary(since date: Date) throws -> WakeSummary {
+        try dbQueue.read { db in
+            let events = try WakeEvent.filter(Column("timestamp") >= date).fetchAll(db)
+            let dark = events.filter { $0.type == "DarkWake" }.count
+            let grouped = Dictionary(grouping: events, by: \.reason)
+                .map { (reason: $0.key, count: $0.value.count) }
+                .sorted { $0.count > $1.count }
+            return WakeSummary(total: events.count, darkWakes: dark, byReason: grouped)
         }
     }
 
@@ -294,6 +335,7 @@ final class DatabaseService: Sendable {
                        MAX(energyImpact) as maxEnergy,
                        AVG(cpuPct) as avgCpu,
                        AVG(memMb) as avgMem,
+                       AVG(idleWakeups) as avgWakeups,
                        COUNT(*) as cnt
                 FROM process_samples
                 WHERE timestamp >= ? AND energyImpact > 0
@@ -308,7 +350,8 @@ final class DatabaseService: Sendable {
                     maxEnergyImpact: row["maxEnergy"] ?? 0,
                     avgCpuPct: row["avgCpu"] ?? 0,
                     avgMemMb: row["avgMem"] ?? 0,
-                    sampleCount: row["cnt"] ?? 0
+                    sampleCount: row["cnt"] ?? 0,
+                    avgIdleWakeups: row["avgWakeups"] ?? 0
                 )
             }
         }
@@ -380,7 +423,7 @@ final class DatabaseService: Sendable {
 
     func fetchDataAge() throws -> Date? {
         try dbQueue.read { db in
-            try Date.fetchOne(db, sql: "SELECT MIN(timestamp) FROM system_metrics")
+            try SystemMetrics.order(Column("timestamp")).fetchOne(db)?.timestamp
         }
     }
 
@@ -391,7 +434,8 @@ final class DatabaseService: Sendable {
         try dbQueue.write { db in
             // Most tables key off `timestamp`; drain_sessions keys off `startTimestamp`.
             for table in ["battery_snapshots", "power_assertions",
-                          "battery_health", "process_samples", "system_metrics", "network_samples"] {
+                          "battery_health", "process_samples", "system_metrics", "network_samples",
+                          "wake_events"] {
                 try db.execute(sql: "DELETE FROM \(table) WHERE timestamp < ?", arguments: [cutoff])
             }
             try db.execute(sql: "DELETE FROM drain_sessions WHERE startTimestamp < ?", arguments: [cutoff])

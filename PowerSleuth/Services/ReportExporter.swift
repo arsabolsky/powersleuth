@@ -36,7 +36,8 @@ final class ReportExporter: Sendable {
             },
             powerAssertionHolders: Array(assertionHolders),
             observations: observations,
-            dataWindowDays: windowDays
+            dataWindowDays: windowDays,
+            backgroundServices: ServicesInventory.capture()
         )
     }
 
