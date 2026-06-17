@@ -28,24 +28,51 @@ struct AnalysisView: View {
     private var drainCard: some View {
         CardView(title: "Current Drain") {
             if let d = diagnosis {
-                HStack(spacing: 16) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(String(format: "%.1f W", d.currentWatts))
-                            .font(.system(size: 36, weight: .bold, design: .rounded))
-                        DrainLevelBadge(level: d.level)
-                    }
-                    Spacer()
-                    VStack(alignment: .trailing, spacing: 8) {
-                        if !d.topAssertors.isEmpty {
-                            Text("Sleep prevented by").font(.caption).foregroundColor(.secondary)
-                            ForEach(d.topAssertors) { a in
-                                Text(a.processName).font(.caption).fontWeight(.medium)
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(spacing: 16) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(String(format: "%.1f W", d.currentWatts))
+                                .font(.system(size: 36, weight: .bold, design: .rounded))
+                            DrainLevelBadge(level: d.level)
+                        }
+                        Spacer()
+                        VStack(alignment: .trailing, spacing: 8) {
+                            if !d.topAssertors.isEmpty {
+                                Text("Sleep prevented by").font(.caption).foregroundColor(.secondary)
+                                ForEach(d.topAssertors) { a in
+                                    Text(a.processName).font(.caption).fontWeight(.medium)
+                                }
                             }
                         }
                     }
+                    runtimeRow(d)
                 }
             } else {
                 ProgressView()
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func runtimeRow(_ d: DrainDiagnosis) -> some View {
+        let bits: [String] = {
+            var b: [String] = []
+            if let full = d.estimatedHoursFromFull, full > 0 {
+                b.append(String(format: "~%.1f h on a full charge", full))
+            }
+            if let rem = d.estimatedHoursRemaining, rem > 0 {
+                b.append(String(format: "~%.1f h left", rem))
+            }
+            if let base = d.baselineWatts, base > 0 {
+                b.append(String(format: "your 7-day normal: %.1f W", base))
+            }
+            return b
+        }()
+        if !bits.isEmpty {
+            Divider()
+            HStack(spacing: 6) {
+                Image(systemName: "clock.arrow.circlepath").font(.caption).foregroundColor(.secondary)
+                Text(bits.joined(separator: "  ·  ")).font(.caption).foregroundColor(.secondary)
             }
         }
     }

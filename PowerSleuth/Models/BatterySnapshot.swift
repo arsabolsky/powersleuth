@@ -13,6 +13,7 @@ struct BatterySnapshot: Codable, FetchableRecord, PersistableRecord, Identifiabl
     var thermalState: Int      // 0=Nominal 1=Fair 2=Serious 3=Critical
     var lowPowerMode: Bool
     var systemWatts: Double    // BatteryData.SystemPower — actual measured watts (0 if unavailable)
+    var screenOn: Bool = true  // CGDisplayIsActive — drain means little without knowing this
 
     static let databaseTableName = "battery_snapshots"
 
@@ -28,6 +29,7 @@ struct BatterySnapshot: Codable, FetchableRecord, PersistableRecord, Identifiabl
         static let thermalState = Column(CodingKeys.thermalState)
         static let lowPowerMode = Column(CodingKeys.lowPowerMode)
         static let systemWatts = Column(CodingKeys.systemWatts)
+        static let screenOn = Column(CodingKeys.screenOn)
     }
 
     /// Real-time power draw in Watts.

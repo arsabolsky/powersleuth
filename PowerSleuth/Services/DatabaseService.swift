@@ -168,6 +168,12 @@ final class DatabaseService: Sendable {
             }
         }
 
+        migrator.registerMigration("v8") { db in
+            try db.alter(table: "battery_snapshots") { t in
+                t.add(column: "screenOn", .boolean).defaults(to: true)
+            }
+        }
+
         try migrator.migrate(dbQueue)
     }
 
@@ -222,6 +228,37 @@ final class DatabaseService: Sendable {
     func saveNetworkSamples(_ samples: [NetworkSample]) throws {
         try dbQueue.write { db in
             for s in samples { try s.insert(db) }
+        }
+    }
+
+    // MARK: - On-battery drain stats (power-source aware)
+
+    struct DrainStats: Sendable {
+        var avgWatts: Double
+        var peakWatts: Double
+        var sampleCount: Int
+        var screenOnWatts: Double
+        var screenOffWatts: Double
+        var latestPercentage: Int
+        var latestVoltageMv: Int
+    }
+
+    /// Aggregates ONLY on-battery (discharging) snapshots with a real wattage reading.
+    func fetchDrainStats(since date: Date) throws -> DrainStats? {
+        try dbQueue.read { db in
+            guard let row = try Row.fetchOne(db, sql: """
+                SELECT AVG(systemWatts), MAX(systemWatts), COUNT(*),
+                       AVG(CASE WHEN screenOn THEN systemWatts END),
+                       AVG(CASE WHEN NOT screenOn THEN systemWatts END)
+                FROM battery_snapshots
+                WHERE timestamp >= ? AND isCharging = 0 AND systemWatts > 0
+                """, arguments: [date]), (row[2] ?? 0) > 0 else { return nil }
+            let latest = try BatterySnapshot.order(Column("timestamp").desc).fetchOne(db)
+            return DrainStats(
+                avgWatts: row[0] ?? 0, peakWatts: row[1] ?? 0, sampleCount: row[2] ?? 0,
+                screenOnWatts: row[3] ?? 0, screenOffWatts: row[4] ?? 0,
+                latestPercentage: latest?.percentage ?? 0, latestVoltageMv: latest?.voltageMv ?? 0
+            )
         }
     }
 

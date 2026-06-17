@@ -85,12 +85,14 @@ final class ReportExporter: Sendable {
     private func buildAverageMetrics(db: DatabaseService, since: Date) throws -> DeviceProfile.AverageMetrics {
         let avg = try db.fetchAverageSystemMetrics(since: since)
         let sleepSessions = try db.fetchLastSession(type: .sleep)
+        // Active watts must be ON-BATTERY only, else AC samples inflate the comparison.
+        let drain = try db.fetchDrainStats(since: since)
         return DeviceProfile.AverageMetrics(
-            avgActiveWatts: avg?.avgWatts ?? 0,
+            avgActiveWatts: drain?.avgWatts ?? avg?.avgWatts ?? 0,
             avgSleepDrainPctPerHour: sleepSessions?.drainPctPerHour ?? 0,
             avgCpuPct: avg?.avgCpu ?? 0,
             avgRamPressurePct: avg?.avgRamPressure ?? 0,
-            peakWatts: avg?.peakWatts ?? 0,
+            peakWatts: drain?.peakWatts ?? avg?.peakWatts ?? 0,
             avgLoadAvg: 0,
             avgGpuPct: avg?.avgGpu ?? 0,
             avgVramInUseMb: avg?.avgVramMb ?? 0

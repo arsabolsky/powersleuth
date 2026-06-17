@@ -2,6 +2,7 @@ import Foundation
 import IOKit.ps
 import IOKit
 import Combine
+import CoreGraphics
 
 @MainActor
 final class BatteryMonitor: ObservableObject {
@@ -78,6 +79,7 @@ final class BatteryMonitor: ObservableObject {
         let thermalState = ProcessInfo.processInfo.thermalState.rawValue
         let lowPowerMode = ProcessInfo.processInfo.isLowPowerModeEnabled
         let systemWatts  = (reg["BatteryData"] as? NSDictionary)?["SystemPower"] as? Double ?? 0
+        let screenOn     = CGDisplayIsActive(CGMainDisplayID()) != 0
 
         return BatterySnapshot(
             id: nil,
@@ -90,7 +92,8 @@ final class BatteryMonitor: ObservableObject {
             powerSource: powerSource,
             thermalState: thermalState,
             lowPowerMode: lowPowerMode,
-            systemWatts: systemWatts
+            systemWatts: systemWatts,
+            screenOn: screenOn
         )
     }
 

@@ -45,6 +45,11 @@ struct DrainDiagnosis {
     let topAssertors: [AssertionSummary]
     let capacityRetentionPct: Double?
     let cycleCount: Int?
+    var estimatedHoursFromFull: Double? = nil   // battery Wh ÷ on-battery avg watts
+    var estimatedHoursRemaining: Double? = nil  // at current charge %
+    var baselineWatts: Double? = nil            // your own 7-day on-battery median/avg
+    var screenOnWatts: Double? = nil
+    var screenOffWatts: Double? = nil
 
     var hasInsights: Bool { !culprits.isEmpty }
 

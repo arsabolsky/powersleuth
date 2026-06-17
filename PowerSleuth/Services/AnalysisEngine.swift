@@ -21,6 +21,10 @@ final class AnalysisEngine: Sendable {
         let chargingFraction = daySnaps.isEmpty ? 1.0 : Double(daySnaps.filter { $0.isCharging }.count) / Double(daySnaps.count)
         let hasSleepData = lastSleepSession != nil
 
+        // On-battery drain stats: recent (this window) vs the user's own 7-day baseline.
+        let recentDrain   = try? db.fetchDrainStats(since: since)
+        let baselineDrain  = try? db.fetchDrainStats(since: Date().addingTimeInterval(-7 * 86400))
+
         // 1. Current watts — prefer measured SystemPower over estimate
         let dischargingSnaps = recentSnapshots.filter { !$0.isCharging }
         let currentWatts: Double = {
@@ -154,8 +158,32 @@ final class AnalysisEngine: Sendable {
             culprits.append("Elevated drain with no single obvious culprit — check the Top Consumers tab for details")
         }
 
+        // Baseline comparison — "vs your own normal" (the value of watching over time).
+        let baselineW = baselineDrain.map(\.avgWatts)
+        if let recent = recentDrain, let base = baselineW, recent.sampleCount >= 10,
+           (baselineDrain?.sampleCount ?? 0) >= 120, base > 0 {
+            let ratio = recent.avgWatts / base
+            if ratio >= 1.4 {
+                culprits.insert(String(format: "Active drain is %.0f%% above your 7-day normal (%.1f W now vs ~%.1f W typical) — something changed.", (ratio - 1) * 100, recent.avgWatts, base), at: 0)
+            }
+        }
+
+        if culprits.isEmpty && level >= .elevated {
+            culprits.append("Elevated drain with no single obvious culprit — check the Top Consumers tab for details")
+        }
+
         if culprits.isEmpty {
             culprits.append("Battery drain looks normal for current activity level")
+        }
+
+        // Estimated runtime from battery energy ÷ on-battery average watts.
+        var hoursFromFull: Double?
+        var hoursRemaining: Double?
+        if let stats = recentDrain ?? baselineDrain, stats.avgWatts > 0,
+           let maxMah = health?.maxMah, maxMah > 100, stats.latestVoltageMv > 0 {
+            let batteryWh = Double(maxMah) / 1000.0 * Double(stats.latestVoltageMv) / 1000.0
+            hoursFromFull = batteryWh / stats.avgWatts
+            hoursRemaining = batteryWh * Double(stats.latestPercentage) / 100.0 / stats.avgWatts
         }
 
         return DrainDiagnosis(
@@ -164,7 +192,12 @@ final class AnalysisEngine: Sendable {
             culprits: culprits,
             topAssertors: topAssertors,
             capacityRetentionPct: health?.retentionPct,
-            cycleCount: health?.cycleCount
+            cycleCount: health?.cycleCount,
+            estimatedHoursFromFull: hoursFromFull,
+            estimatedHoursRemaining: hoursRemaining,
+            baselineWatts: baselineW,
+            screenOnWatts: recentDrain?.screenOnWatts,
+            screenOffWatts: recentDrain?.screenOffWatts
         )
     }
 }
