@@ -11,6 +11,11 @@ struct DeviceProfile: Codable, Sendable {
     let observations: [String]
     let dataWindowDays: Int
     var backgroundServices: [String]? = nil   // optional → old exported JSON still decodes
+    // All optional → profiles exported before these signals existed still decode.
+    var wakeStats: WakeStats? = nil
+    var networkConsumers: [NetworkConsumerSummary]? = nil
+    var componentPower: ComponentPower? = nil
+    var sleepStats: SleepStats? = nil
 
     struct DeviceInfo: Codable, Sendable {
         let model: String
@@ -37,6 +42,9 @@ struct DeviceProfile: Codable, Sendable {
         // Optional so profiles exported before GPU support still decode.
         var avgGpuPct: Double? = nil
         var avgVramInUseMb: Double? = nil
+        // On-battery active-watt percentiles — averages alone hide bimodal (idle vs. busy) behavior.
+        var activeWattsP50: Double? = nil
+        var activeWattsP90: Double? = nil
     }
 
     struct ConsumerSummary: Codable, Sendable {
@@ -44,6 +52,33 @@ struct DeviceProfile: Codable, Sendable {
         let avgEnergyImpact: Double
         let avgCpuPct: Double
         let avgMemMb: Double
+    }
+
+    /// Overnight/idle wake activity — dark wakes are the usual sleep-drain culprit.
+    struct WakeStats: Codable, Sendable {
+        let total: Int
+        let darkWakes: Int
+        let perDay: Double
+        let topReasons: [ReasonCount]
+        struct ReasonCount: Codable, Sendable { let reason: String; let count: Int }
+    }
+
+    struct NetworkConsumerSummary: Codable, Sendable {
+        let name: String
+        let totalMB: Double
+        let retransmits: Int
+    }
+
+    /// Measured per-component power (IOReport energy model, no admin required).
+    struct ComponentPower: Codable, Sendable {
+        let cpuWatts: Double
+        let gpuWatts: Double
+        let aneWatts: Double
+    }
+
+    struct SleepStats: Codable, Sendable {
+        let medianDrainPctPerHour: Double
+        let sessionCount: Int
     }
 
     func toJSON(pretty: Bool = true) throws -> Data {
@@ -98,6 +133,40 @@ struct DeviceProfile: Codable, Sendable {
 
         for c in topConsumers.prefix(15) {
             md += "\n| \(c.name) | \(String(format: "%.1f", c.avgEnergyImpact)) | \(String(format: "%.1f", c.avgCpuPct))% | \(String(format: "%.0f", c.avgMemMb)) MB |"
+        }
+
+        if averageMetrics.activeWattsP50 != nil || averageMetrics.activeWattsP90 != nil {
+            md += "\n\n## On-Battery Power Distribution\n"
+            md += "| Median (p50) | \(averageMetrics.activeWattsP50.map { String(format: "%.1f W", $0) } ?? "—") |\n"
+            md += "| 90th pct (p90) | \(averageMetrics.activeWattsP90.map { String(format: "%.1f W", $0) } ?? "—") |\n"
+        }
+
+        if let cp = componentPower {
+            md += "\n\n## Component Power (measured)\n| | |\n|---|---|\n"
+            md += "| CPU | \(String(format: "%.2f", cp.cpuWatts)) W |\n"
+            md += "| GPU | \(String(format: "%.2f", cp.gpuWatts)) W |\n"
+            md += "| ANE | \(String(format: "%.2f", cp.aneWatts)) W |\n"
+        }
+
+        if let w = wakeStats {
+            md += "\n\n## Wake Activity\n"
+            md += "Dark wakes: **\(w.darkWakes)** of \(w.total) total (\(String(format: "%.1f", w.perDay))/day)\n\n"
+            if !w.topReasons.isEmpty {
+                md += "| Reason | Count |\n|---|---|\n"
+                for r in w.topReasons.prefix(8) { md += "| \(r.reason) | \(r.count) |\n" }
+            }
+        }
+
+        if let consumers = networkConsumers, !consumers.isEmpty {
+            md += "\n\n## Top Network Consumers\n| Process | Data | Retransmits |\n|---|---|---|\n"
+            for c in consumers.prefix(12) {
+                md += "| \(c.name) | \(String(format: "%.1f", c.totalMB)) MB | \(c.retransmits) |\n"
+            }
+        }
+
+        if let s = sleepStats, s.sessionCount > 0 {
+            md += "\n\n## Sleep Sessions\n"
+            md += "Median drain: **\(String(format: "%.2f", s.medianDrainPctPerHour)) %/hr** over \(s.sessionCount) session(s)\n"
         }
 
         if !powerAssertionHolders.isEmpty {

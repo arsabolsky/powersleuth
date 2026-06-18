@@ -21,6 +21,16 @@ final class ReportExporter: Sendable {
             .prefix(5)
             .map { "\($0.key) (\($0.value.count) assertions)" }
 
+        // Enriched signals (best-effort — a missing table/empty window just yields nil).
+        let wakeStats = try? buildWakeStats(db: db, since: since, windowDays: windowDays)
+        let networkConsumers = try? buildNetworkConsumers(db: db, since: since)
+        let componentPower = (try? db.fetchAverageComponentPower(since: since)).flatMap { $0 }.map {
+            DeviceProfile.ComponentPower(cpuWatts: $0.cpuW, gpuWatts: $0.gpuW, aneWatts: $0.aneW)
+        }
+        let sleepStats = (try? db.fetchSleepStats(since: since)).map {
+            DeviceProfile.SleepStats(medianDrainPctPerHour: $0.median, sessionCount: $0.count)
+        }
+
         return DeviceProfile(
             generatedAt: Date(),
             device: device,
@@ -37,8 +47,33 @@ final class ReportExporter: Sendable {
             powerAssertionHolders: Array(assertionHolders),
             observations: observations,
             dataWindowDays: windowDays,
-            backgroundServices: ServicesInventory.capture()
+            backgroundServices: ServicesInventory.capture(),
+            wakeStats: wakeStats,
+            networkConsumers: networkConsumers,
+            componentPower: componentPower,
+            sleepStats: sleepStats
         )
+    }
+
+    private func buildWakeStats(db: DatabaseService, since: Date, windowDays: Int) throws -> DeviceProfile.WakeStats {
+        let w = try db.fetchWakeSummary(since: since)
+        let days = max(1.0, Double(windowDays))
+        return DeviceProfile.WakeStats(
+            total: w.total,
+            darkWakes: w.darkWakes,
+            perDay: Double(w.total) / days,
+            topReasons: w.byReason.prefix(8).map { .init(reason: $0.reason, count: $0.count) }
+        )
+    }
+
+    private func buildNetworkConsumers(db: DatabaseService, since: Date) throws -> [DeviceProfile.NetworkConsumerSummary] {
+        try db.fetchNetworkAggregations(since: since, limit: 12).map {
+            DeviceProfile.NetworkConsumerSummary(
+                name: $0.processName,
+                totalMB: Double($0.totalBytes) / (1024 * 1024),
+                retransmits: $0.totalRetransmits
+            )
+        }
     }
 
     private static func readDeviceInfo() -> DeviceProfile.DeviceInfo {
@@ -87,6 +122,9 @@ final class ReportExporter: Sendable {
         let sleepSessions = try db.fetchLastSession(type: .sleep)
         // Active watts must be ON-BATTERY only, else AC samples inflate the comparison.
         let drain = try db.fetchDrainStats(since: since)
+        // Percentiles over the on-battery watt distribution — distinguishes "idle most of the
+        // time, occasionally busy" from "steadily moderate", which share the same average.
+        let wattSamples = (try? db.fetchOnBatteryWattSamples(since: since)) ?? []
         return DeviceProfile.AverageMetrics(
             avgActiveWatts: drain?.avgWatts ?? avg?.avgWatts ?? 0,
             avgSleepDrainPctPerHour: sleepSessions?.drainPctPerHour ?? 0,
@@ -95,8 +133,22 @@ final class ReportExporter: Sendable {
             peakWatts: drain?.peakWatts ?? avg?.peakWatts ?? 0,
             avgLoadAvg: 0,
             avgGpuPct: avg?.avgGpu ?? 0,
-            avgVramInUseMb: avg?.avgVramMb ?? 0
+            avgVramInUseMb: avg?.avgVramMb ?? 0,
+            activeWattsP50: wattSamples.isEmpty ? nil : Self.percentile(wattSamples, 0.50),
+            activeWattsP90: wattSamples.isEmpty ? nil : Self.percentile(wattSamples, 0.90)
         )
+    }
+
+    /// Linear-interpolated percentile of an already-sorted ascending array.
+    static func percentile(_ sorted: [Double], _ p: Double) -> Double {
+        guard !sorted.isEmpty else { return 0 }
+        guard sorted.count > 1 else { return sorted[0] }
+        let rank = p * Double(sorted.count - 1)
+        let lo = Int(rank.rounded(.down))
+        let hi = Int(rank.rounded(.up))
+        if lo == hi { return sorted[lo] }
+        let frac = rank - Double(lo)
+        return sorted[lo] * (1 - frac) + sorted[hi] * frac
     }
 
     private func buildObservations(db: DatabaseService, since: Date) throws -> [String] {
@@ -140,6 +192,98 @@ final class ReportExporter: Sendable {
         return url
     }
 
+    /// Full raw archive: a zip containing a consistent copy of the SQLite DB plus per-table
+    /// time-series CSVs. This is the "everything" export for deep offline analysis and real
+    /// history — nothing is aggregated away.
+    func exportFullArchive(windowDays: Int = 30) throws -> URL {
+        let since = Date().addingTimeInterval(-Double(windowDays) * 86400)
+        let db = DatabaseService.shared
+        let fm = FileManager.default
+
+        // Stage everything in a temp folder, then zip the folder.
+        let stamp = fileStamp()
+        let stageDir = Self.exportsDirectory.appendingPathComponent("powersleuth-archive-\(stamp)", isDirectory: true)
+        try? fm.removeItem(at: stageDir)
+        try fm.createDirectory(at: stageDir, withIntermediateDirectories: true)
+        defer { try? fm.removeItem(at: stageDir) }
+
+        // 1. Consistent copy of the whole database (all tables, full retained history).
+        try db.backup(to: stageDir.appendingPathComponent("powersleuth.db"))
+
+        // 2. Convenience CSVs for the time-series tables, scoped to the window.
+        try writeSystemMetricsCSV(db: db, since: since, to: stageDir.appendingPathComponent("system_metrics.csv"))
+        try writeNetworkCSV(db: db, since: since, to: stageDir.appendingPathComponent("network_samples.csv"))
+        try writeWakesCSV(db: db, since: since, to: stageDir.appendingPathComponent("wake_events.csv"))
+        try writeSessionsCSV(db: db, since: since, to: stageDir.appendingPathComponent("drain_sessions.csv"))
+
+        // 3. Zip the folder with `ditto` (always present on macOS, preserves structure).
+        let zipURL = Self.exportsDirectory.appendingPathComponent("powersleuth-archive-\(stamp).zip")
+        try? fm.removeItem(at: zipURL)
+        let proc = Process()
+        proc.executableURL = URL(fileURLWithPath: "/usr/bin/ditto")
+        proc.arguments = ["-c", "-k", "--sequesterRsrc", "--keepParent", stageDir.path, zipURL.path]
+        try proc.run()
+        proc.waitUntilExit()
+        guard proc.terminationStatus == 0 else {
+            throw NSError(domain: "PowerSleuth", code: Int(proc.terminationStatus),
+                          userInfo: [NSLocalizedDescriptionKey: "Failed to create archive (ditto exit \(proc.terminationStatus))."])
+        }
+        return zipURL
+    }
+
+    private func writeSystemMetricsCSV(db: DatabaseService, since: Date, to url: URL) throws {
+        let rows = try db.fetchSystemMetrics(since: since)
+        let fmt = ISO8601DateFormatter()
+        var csv = "timestamp,systemWatts,adapterWatts,cpuUserPct,cpuSysPct,cpuIdlePct,cpuWatts,gpuWatts,aneWatts,displayWatts,gpuUtilPct,vramInUseMb,ramPressurePct,ramFreeMb,ramActiveMb,ramCompressedMb,ramWiredMb,diskReadMbS,diskWriteMbS,loadAvg1m\n"
+        for m in rows {
+            csv += "\(fmt.string(from: m.timestamp)),\(m.systemWatts),\(m.adapterWatts),\(m.cpuUserPct),\(m.cpuSysPct),\(m.cpuIdlePct),\(m.cpuWatts),\(m.gpuWatts),\(m.aneWatts),\(m.displayWatts),\(m.gpuUtilPct),\(m.vramInUseMb),\(String(format: "%.1f", m.ramPressurePct)),\(m.ramFreeMb),\(m.ramActiveMb),\(m.ramCompressedMb),\(m.ramWiredMb),\(m.diskReadMbS),\(m.diskWriteMbS),\(m.loadAvg1m)\n"
+        }
+        try csv.data(using: .utf8)?.write(to: url)
+    }
+
+    private func writeNetworkCSV(db: DatabaseService, since: Date, to url: URL) throws {
+        let rows = try db.fetchNetworkSamples(since: since)
+        let fmt = ISO8601DateFormatter()
+        var csv = "timestamp,processName,bytesInDelta,bytesOutDelta,retransmits\n"
+        for s in rows {
+            csv += "\(fmt.string(from: s.timestamp)),\(csvField(s.processName)),\(s.bytesInDelta),\(s.bytesOutDelta),\(s.retransmits)\n"
+        }
+        try csv.data(using: .utf8)?.write(to: url)
+    }
+
+    private func writeWakesCSV(db: DatabaseService, since: Date, to url: URL) throws {
+        let rows = try db.fetchWakeEvents(since: since)
+        let fmt = ISO8601DateFormatter()
+        var csv = "timestamp,type,reason\n"
+        for e in rows {
+            csv += "\(fmt.string(from: e.timestamp)),\(csvField(e.type)),\(csvField(e.reason))\n"
+        }
+        try csv.data(using: .utf8)?.write(to: url)
+    }
+
+    private func writeSessionsCSV(db: DatabaseService, since: Date, to url: URL) throws {
+        let rows = try db.fetchSessions(since: since)
+        let fmt = ISO8601DateFormatter()
+        var csv = "startTimestamp,endTimestamp,sessionType,startPercentage,endPercentage,avgWatts,drainPctPerHour\n"
+        for s in rows {
+            let end = s.endTimestamp.map { fmt.string(from: $0) } ?? ""
+            csv += "\(fmt.string(from: s.startTimestamp)),\(end),\(s.sessionType.rawValue),\(s.startPercentage),\(s.endPercentage.map(String.init) ?? ""),\(s.avgWatts.map { String($0) } ?? ""),\(s.drainPctPerHour.map { String($0) } ?? "")\n"
+        }
+        try csv.data(using: .utf8)?.write(to: url)
+    }
+
+    /// Quote a CSV field if it contains a comma, quote, or newline.
+    private func csvField(_ s: String) -> String {
+        guard s.contains(",") || s.contains("\"") || s.contains("\n") else { return s }
+        return "\"\(s.replacingOccurrences(of: "\"", with: "\"\""))\""
+    }
+
+    private func fileStamp() -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd_HH-mm"
+        return formatter.string(from: Date())
+    }
+
     /// Exports go to ~/Library/Application Support/PowerSleuth/Exports — unlike the
     /// Desktop, this needs no TCC permission for a non-sandboxed app, so writes never
     /// silently fail. ExportView's "Reveal in Finder" surfaces the file for the user.
@@ -152,9 +296,6 @@ final class ReportExporter: Sendable {
     }
 
     private func exportURL(ext: String) -> URL {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd_HH-mm"
-        let name = "powersleuth-\(formatter.string(from: Date())).\(ext)"
-        return Self.exportsDirectory.appendingPathComponent(name)
+        Self.exportsDirectory.appendingPathComponent("powersleuth-\(fileStamp()).\(ext)")
     }
 }

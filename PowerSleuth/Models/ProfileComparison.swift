@@ -11,6 +11,7 @@ struct ProfileComparison: Sendable {
     let assertionsBoth: [String]
     let servicesOnlyA: [String]   // background services present only on A
     let servicesOnlyB: [String]
+    let networkConsumers: [NetworkDelta]
 
     struct MetricDelta: Identifiable, Sendable {
         let id = UUID()
@@ -42,12 +43,21 @@ struct ProfileComparison: Sendable {
         var ratio: Double? { (energyA > 0 && energyB > 0) ? energyA / energyB : nil }
     }
 
+    struct NetworkDelta: Identifiable, Sendable {
+        let id = UUID()
+        let name: String
+        let mbA: Double      // 0 when not present on A
+        let mbB: Double
+        let presentA: Bool
+        let presentB: Bool
+    }
+
     // MARK: - Build
 
     static func compare(_ a: DeviceProfile, _ b: DeviceProfile) -> ProfileComparison {
         let am = a.averageMetrics, bm = b.averageMetrics
 
-        let metrics: [MetricDelta] = [
+        var metrics: [MetricDelta] = [
             MetricDelta(label: "Active power",   unit: "W",    valueA: am.avgActiveWatts, valueB: bm.avgActiveWatts, higherIsWorse: true),
             MetricDelta(label: "Peak power",     unit: "W",    valueA: am.peakWatts, valueB: bm.peakWatts, higherIsWorse: true),
             MetricDelta(label: "Sleep drain",    unit: "%/hr", valueA: am.avgSleepDrainPctPerHour, valueB: bm.avgSleepDrainPctPerHour, higherIsWorse: true),
@@ -57,6 +67,25 @@ struct ProfileComparison: Sendable {
             MetricDelta(label: "Battery health", unit: "%",    valueA: a.battery.retentionPct, valueB: b.battery.retentionPct, higherIsWorse: false),
             MetricDelta(label: "Cycle count",    unit: "",     valueA: Double(a.battery.cycleCount), valueB: Double(b.battery.cycleCount), higherIsWorse: true),
         ]
+
+        // Derived rows from the enriched signals — only added when at least one profile
+        // carries the data, so comparing two old profiles stays unchanged.
+        func appendIfPresent(_ label: String, _ unit: String, _ va: Double?, _ vb: Double?, higherIsWorse: Bool = true) {
+            guard va != nil || vb != nil else { return }
+            metrics.append(MetricDelta(label: label, unit: unit, valueA: va ?? 0, valueB: vb ?? 0, higherIsWorse: higherIsWorse))
+        }
+        appendIfPresent("Median power (p50)", "W", am.activeWattsP50, bm.activeWattsP50)
+        appendIfPresent("90th-pct power (p90)", "W", am.activeWattsP90, bm.activeWattsP90)
+        appendIfPresent("Dark wakes/day", "", a.wakeStats.map { Double($0.darkWakes) / max(1, Double(a.dataWindowDays)) },
+                        b.wakeStats.map { Double($0.darkWakes) / max(1, Double(b.dataWindowDays)) })
+        appendIfPresent("CPU power", "W", a.componentPower?.cpuWatts, b.componentPower?.cpuWatts)
+        appendIfPresent("GPU power", "W", a.componentPower?.gpuWatts, b.componentPower?.gpuWatts)
+        appendIfPresent("ANE power", "W", a.componentPower?.aneWatts, b.componentPower?.aneWatts)
+        appendIfPresent("Median sleep drain", "%/hr", a.sleepStats.map(\.medianDrainPctPerHour), b.sleepStats.map(\.medianDrainPctPerHour))
+        func totalMB(_ list: [DeviceProfile.NetworkConsumerSummary]?) -> Double? {
+            list.map { $0.reduce(0.0) { $0 + $1.totalMB } }
+        }
+        appendIfPresent("Network total", "MB", totalMB(a.networkConsumers), totalMB(b.networkConsumers))
 
         // Match consumers by normalized name; unmatched apps appear with one side at 0.
         func norm(_ s: String) -> String { s.lowercased().trimmingCharacters(in: .whitespaces) }
@@ -88,6 +117,22 @@ struct ProfileComparison: Sendable {
         let servicesA = Set(a.backgroundServices ?? [])
         let servicesB = Set(b.backgroundServices ?? [])
 
+        // Network consumers matched by normalized name, same as energy consumers.
+        var netA: [String: DeviceProfile.NetworkConsumerSummary] = [:]
+        for n in a.networkConsumers ?? [] { netA[norm(n.name)] = n }
+        var netB: [String: DeviceProfile.NetworkConsumerSummary] = [:]
+        for n in b.networkConsumers ?? [] { netB[norm(n.name)] = n }
+        let networkConsumers: [NetworkDelta] = Set(netA.keys).union(netB.keys).map { key in
+            let na = netA[key]; let nb = netB[key]
+            return NetworkDelta(
+                name: na?.name ?? nb?.name ?? key,
+                mbA: na?.totalMB ?? 0,
+                mbB: nb?.totalMB ?? 0,
+                presentA: na != nil,
+                presentB: nb != nil
+            )
+        }.sorted { max($0.mbA, $0.mbB) > max($1.mbA, $1.mbB) }
+
         return ProfileComparison(
             labelA: label(for: a),
             labelB: label(for: b),
@@ -97,7 +142,8 @@ struct ProfileComparison: Sendable {
             assertionsOnlyB: holdersB.subtracting(holdersA).sorted(),
             assertionsBoth: holdersA.intersection(holdersB).sorted(),
             servicesOnlyA: servicesA.subtracting(servicesB).sorted(),
-            servicesOnlyB: servicesB.subtracting(servicesA).sorted()
+            servicesOnlyB: servicesB.subtracting(servicesA).sorted(),
+            networkConsumers: networkConsumers
         )
     }
 

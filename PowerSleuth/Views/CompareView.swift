@@ -22,6 +22,7 @@ struct CompareView: View {
                     identityCard(cmp)
                     metricsCard(cmp)
                     consumersCard(cmp)
+                    networkCard(cmp)
                     assertionsCard(cmp)
                     servicesCard(cmp)
                     aiCard(cmp)
@@ -136,6 +137,33 @@ struct CompareView: View {
                                 .foregroundColor(d.presentB ? .primary : .secondary)
                             Text(ratioLabel(d)).font(.caption2.monospacedDigit())
                                 .foregroundColor(ratioColor(d)).frame(width: 56, alignment: .trailing)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private func networkCard(_ c: ProfileComparison) -> some View {
+        Group {
+            if !c.networkConsumers.isEmpty {
+                CardView(title: "Network Use (matched by name)") {
+                    VStack(spacing: 5) {
+                        HStack {
+                            Text("").frame(maxWidth: .infinity, alignment: .leading)
+                            Text(c.labelA).font(.caption2).foregroundColor(.secondary).frame(width: 70, alignment: .trailing).lineLimit(1)
+                            Text(c.labelB).font(.caption2).foregroundColor(.secondary).frame(width: 70, alignment: .trailing).lineLimit(1)
+                        }
+                        ForEach(c.networkConsumers.prefix(15)) { d in
+                            HStack {
+                                Text(d.name).font(.caption).lineLimit(1).frame(maxWidth: .infinity, alignment: .leading)
+                                Text(d.presentA ? String(format: "%.1f MB", d.mbA) : "—")
+                                    .font(.caption.monospacedDigit()).frame(width: 70, alignment: .trailing)
+                                    .foregroundColor(d.presentA ? .primary : .secondary)
+                                Text(d.presentB ? String(format: "%.1f MB", d.mbB) : "—")
+                                    .font(.caption.monospacedDigit()).frame(width: 70, alignment: .trailing)
+                                    .foregroundColor(d.presentB ? .primary : .secondary)
+                            }
                         }
                     }
                 }

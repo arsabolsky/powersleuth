@@ -349,6 +349,32 @@ final class DatabaseService: Sendable {
         }
     }
 
+    /// On-battery (discharging) per-sample watts, sorted ascending — for percentile computation.
+    func fetchOnBatteryWattSamples(since date: Date) throws -> [Double] {
+        try dbQueue.read { db in
+            try Double.fetchAll(db, sql: """
+                SELECT systemWatts FROM battery_snapshots
+                WHERE timestamp >= ? AND isCharging = 0 AND systemWatts > 0
+                ORDER BY systemWatts
+                """, arguments: [date])
+        }
+    }
+
+    /// Median sleep-drain rate + how many completed sleep sessions back it.
+    func fetchSleepStats(since date: Date) throws -> (median: Double, count: Int) {
+        try dbQueue.read { db in
+            let rates = try DrainSession
+                .filter(Column("sessionType") == SessionType.sleep.rawValue)
+                .filter(Column("drainPctPerHour") != nil)
+                .filter(Column("startTimestamp") >= date)
+                .fetchAll(db).compactMap(\.drainPctPerHour).sorted()
+            guard !rates.isEmpty else { return (0, 0) }
+            let mid = rates.count / 2
+            let median = rates.count % 2 == 0 ? (rates[mid-1] + rates[mid]) / 2 : rates[mid]
+            return (median, rates.count)
+        }
+    }
+
     func medianSleepDrainRate(days: Int) throws -> Double {
         try dbQueue.read { db in
             let rates = try DrainSession
@@ -454,6 +480,32 @@ final class DatabaseService: Sendable {
                 )
             }
         }
+    }
+
+    // MARK: - Raw time-series reads (full archive export)
+
+    func fetchNetworkSamples(since date: Date) throws -> [NetworkSample] {
+        try dbQueue.read { db in
+            try NetworkSample.filter(Column("timestamp") >= date).order(Column("timestamp")).fetchAll(db)
+        }
+    }
+
+    func fetchWakeEvents(since date: Date) throws -> [WakeEvent] {
+        try dbQueue.read { db in
+            try WakeEvent.filter(Column("timestamp") >= date).order(Column("timestamp")).fetchAll(db)
+        }
+    }
+
+    func fetchSessions(since date: Date) throws -> [DrainSession] {
+        try dbQueue.read { db in
+            try DrainSession.filter(Column("startTimestamp") >= date).order(Column("startTimestamp")).fetchAll(db)
+        }
+    }
+
+    /// Consistent, WAL-safe copy of the live database to `destinationURL` (GRDB online backup).
+    func backup(to destinationURL: URL) throws {
+        let dest = try DatabaseQueue(path: destinationURL.path)
+        try dbQueue.backup(to: dest)
     }
 
     // MARK: - Profile generation

@@ -69,6 +69,12 @@ struct ExportView: View {
                              color: .orange) {
                     exportCSV()
                 }
+                ExportButton(title: "Full Archive",
+                             subtitle: "SQLite DB + all CSVs (.zip)",
+                             icon: "archivebox",
+                             color: .purple) {
+                    exportArchive()
+                }
             }
 
             if isGenerating {
@@ -77,7 +83,7 @@ struct ExportView: View {
             if let url = exportedURL {
                 HStack(spacing: 8) {
                     Image(systemName: "checkmark.circle.fill").foregroundColor(.green)
-                    Text("Saved to Desktop: \(url.lastPathComponent)")
+                    Text("Saved: \(url.lastPathComponent)")
                         .font(.callout)
                     Spacer()
                     Button("Reveal") { NSWorkspace.shared.activateFileViewerSelecting([url]) }
@@ -104,8 +110,9 @@ struct ExportView: View {
                 CompareStep(num: 1, text: "Install PowerSleuth on both Macs")
                 CompareStep(num: 2, text: "Let both run for at least 7 days (same usage pattern if possible)")
                 CompareStep(num: 3, text: "Export \"Device Profile\" (JSON) from each Mac")
-                CompareStep(num: 4, text: "Compare: avgActiveWatts, sleepDrainPctPerHour, topConsumers")
-                CompareStep(num: 5, text: "The Mac with higher values in those fields is the one draining faster — now you know why")
+                CompareStep(num: 4, text: "Load both in the Compare tab — it diffs power percentiles, dark wakes, network use, per-component power, sleep drain, energy hogs & background services")
+                CompareStep(num: 5, text: "Red values flag the worse Mac on each metric — now you know why")
+                CompareStep(num: 6, text: "Want everything? \"Full Archive\" bundles the raw SQLite DB + per-table CSVs for deep offline analysis")
             }
 
             Divider()
@@ -113,8 +120,11 @@ struct ExportView: View {
             Text("Key fields to compare in the JSON:")
                 .font(.caption).foregroundColor(.secondary)
             Text("""
-                averageMetrics.avgActiveWatts     → idle power draw
+                averageMetrics.activeWattsP50/P90  → power distribution, not just the average
                 averageMetrics.avgSleepDrainPctPerHour → overnight drain
+                wakeStats.darkWakes                → background wakes keeping it busy
+                networkConsumers[0..2]             → who's chattering on the network
+                componentPower.{cpu,gpu,ane}Watts  → measured per-component draw
                 topConsumers[0..2]                 → biggest energy hogs
                 powerAssertionHolders              → what prevents deep sleep
                 battery.retentionPct               → health difference
@@ -179,6 +189,19 @@ struct ExportView: View {
         Task {
             do {
                 let url = try ReportExporter.shared.exportCSV(windowDays: windowDays)
+                await MainActor.run { exportedURL = url; isGenerating = false }
+            } catch {
+                await MainActor.run { errorMessage = error.localizedDescription; isGenerating = false }
+            }
+        }
+    }
+
+    private func exportArchive() {
+        isGenerating = true; exportedURL = nil; errorMessage = nil
+        Task {
+            do {
+                // Archive the full retained history regardless of the comparison window.
+                let url = try ReportExporter.shared.exportFullArchive(windowDays: max(windowDays, 30))
                 await MainActor.run { exportedURL = url; isGenerating = false }
             } catch {
                 await MainActor.run { errorMessage = error.localizedDescription; isGenerating = false }

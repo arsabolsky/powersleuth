@@ -213,7 +213,15 @@ final class NarrativeEngine: ObservableObject {
         if !notable.isEmpty { lines.append("Per-app energy impact (A vs B):"); lines.append(contentsOf: notable) }
         if !c.assertionsOnlyA.isEmpty { lines.append("Sleep-preventers only on A: \(c.assertionsOnlyA.joined(separator: ", "))") }
         if !c.assertionsOnlyB.isEmpty { lines.append("Sleep-preventers only on B: \(c.assertionsOnlyB.joined(separator: ", "))") }
-        lines.append("\nWrite 3-5 sentences: which Mac is worse and the concrete reasons (name the apps/metrics), then the top fix.")
+        if !c.servicesOnlyA.isEmpty { lines.append("Background services only on A: \(c.servicesOnlyA.joined(separator: ", "))") }
+        if !c.servicesOnlyB.isEmpty { lines.append("Background services only on B: \(c.servicesOnlyB.joined(separator: ", "))") }
+        let netNotable = c.networkConsumers.prefix(8).map { d -> String in
+            let a = d.presentA ? String(format: "%.0fMB", d.mbA) : "absent"
+            let b = d.presentB ? String(format: "%.0fMB", d.mbB) : "absent"
+            return "  \(d.name): A=\(a) B=\(b)"
+        }
+        if !netNotable.isEmpty { lines.append("Network use (A vs B):"); lines.append(contentsOf: netNotable) }
+        lines.append("\nWrite 3-5 sentences: which Mac is worse and the concrete reasons (name the apps/metrics, including dark wakes, network, and component power where notable), then the top fix.")
         return lines.joined(separator: "\n")
     }
 
